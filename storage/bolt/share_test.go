@@ -25,7 +25,7 @@ func newTestShareBackend(t *testing.T) shareBackend {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	return shareBackend{db: db}
+	return shareBackend{db: db.Bolt}
 }
 
 func remainingHashes(t *testing.T, s shareBackend) []string {

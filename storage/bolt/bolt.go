@@ -14,7 +14,7 @@ import (
 // NewStorage creates a storage.Storage based on Bolt DB.
 func NewStorage(db *storm.DB) (*storage.Storage, error) {
 	userStore := users.NewStorage(usersBackend{db: db})
-	shareStore := share.NewStorage(shareBackend{db: db})
+	shareStore := share.NewStorage(shareBackend{db: db.Bolt})
 	settingsStore := settings.NewStorage(settingsBackend{db: db.Bolt})
 	authStore := auth.NewStorage(authBackend{db: db.Bolt}, userStore)
 	sessionStore := sessions.NewStorage(sessionBackend{db: db.Bolt})

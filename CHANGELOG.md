@@ -12,6 +12,7 @@ and `MIGRATION.md` for upgrading from v2.
 * Share password guessing budget (`http/public.go`, `http/ratelimit.go`): anyone holding a link hash could try passwords without limit. Guesses are budgeted per peer and link (30/min, `429` + `Retry-After`); token bypass and unprotected links unaffected. Test guesses to 429.
 * Sessions without storm (`storage/bolt/sessions.go`): first backend migrated from archived storm to raw bbolt on the shared handle. Same bucket/key/JSON layout, so pre-migration rows stay readable and rollbacks work; compat test proves both directions.
 * Settings without storm (`storage/bolt/config.go`, `kv.go`): same pattern for the shared `config` bucket rows; compat test proves both directions. The storm key/value helpers are gone.
+* Shares without storm (`storage/bolt/share.go`): same pattern for the `Link` bucket (scan-and-filter replaces index queries at this scale); existing prefix-delete tests now run against the raw backend, plus a storm compat test.
 * Auth without storm (`storage/bolt/auth.go`): same pattern for the `config`/`auther` key/value row shared with settings; compat test proves both directions.
 * Supply chain (`Dockerfile`): `JSON.sh` is fetched commit-pinned but was never integrity-checked. Added `sha256sum -c` so a compromised host fails the build; verified with a fetcher-stage build.
 
