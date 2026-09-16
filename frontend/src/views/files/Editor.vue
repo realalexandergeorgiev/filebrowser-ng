@@ -70,6 +70,7 @@
         v-show="isPreview && isMarkdownFile"
         id="preview-container"
         class="md_preview"
+        :style="{ '--preview-font-size': `${fontSize}px` }"
         v-html="previewContent"
       ></div>
       <form v-show="!isPreview || !isMarkdownFile" id="editor"></form>

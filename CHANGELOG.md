@@ -6,6 +6,12 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+## [0.3.2-ng] - 2026-09-16
+
+### Fixed
+
+* Markdown preview font size (`frontend/src/views/files/Editor.vue`, `frontend/src/css/mdPreview.css`): the preview pane kept a fixed `20px` font, so the increase/decrease font-size buttons only affected the editor. The preview now scales with the same size, exposed as the `--preview-font-size` CSS variable. Verified in a real browser: body `16px → 18px` and headings `32px → 36px` while the editor follows in lockstep.
+
 ## [0.3.1-ng] - 2026-09-16
 
 ### Fixed
