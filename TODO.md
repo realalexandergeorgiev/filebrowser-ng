@@ -9,8 +9,8 @@ AI-oriented backlog. Read this top-to-bottom in a fresh session before touching 
 - **Go module path:** `github.com/realalexandergeorgiev/filebrowser-ng`.
   All imports use this path; there is **no** `.../v2` suffix anymore.
 - **Language/toolchain:** Go 1.26 (`go.mod`), Node >= 24 + pnpm 10 for `frontend/`.
-- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`.
-- **Version string:** `version/version.go` defaults to `0.2.0-ng`; release builds
+- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`.
+- **Version string:** `version/version.go` defaults to `0.3.0-ng`; release builds
   inject `version.Version` / `version.CommitSHA` via `-ldflags`.
 - **Prebuilt binaries:** `releases/filebrowser-ng_<os>_<arch>[.exe]` + `releases/checksums.txt`.
   Rebuild with the script in §2, then refresh `checksums.txt`.

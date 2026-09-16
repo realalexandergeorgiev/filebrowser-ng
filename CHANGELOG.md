@@ -6,10 +6,12 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+## [0.3.0-ng] - 2026-09-16
+
 ### Changed
 
 * Module path renamed to `github.com/realalexandergeorgiev/filebrowser-ng` (was `github.com/filebrowser/filebrowser/v2`); all imports, `go.mod`, build flags, CLI docs and repo links updated. Fork now lives at `github.com/realalexandergeorgiev/filebrowser-ng`.
-* Rebranded to `filebrowser-ng`: banner/branding, CLI name and help text, frontend title/manifest/links, `LICENSE` copyright. Version default bumped to `0.2.0-ng`.
+* Rebranded to `filebrowser-ng`: banner/branding, CLI name and help text, frontend title/manifest/links, `LICENSE` copyright. Version default bumped to `0.3.0-ng`.
 * Added `TODO.md` (AI-oriented backlog) and regenerated `docs/cli/*` for the new command name.
 
 ### Fixed
