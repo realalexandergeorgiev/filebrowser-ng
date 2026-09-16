@@ -22,7 +22,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		status, err := authenticateShareRequest(r, link)
+		status, err := authenticateShareRequest(w, r, link)
 		if status != 0 || err != nil {
 			return status, err
 		}
@@ -137,13 +137,23 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 	return rawDirHandler(w, r, d, file)
 })
 
-func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
+// sharePasswordLimiter budgets share password guesses per peer and link.
+// It is process-wide so parallel handler instances share one budget.
+var sharePasswordLimiter = newRateLimiter(maxSharePasswordAttempts, rateLimitWindow)
+
+func authenticateShareRequest(w http.ResponseWriter, r *http.Request, l *share.Link) (int, error) {
 	if l.PasswordHash == "" {
 		return 0, nil
 	}
 
 	if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("token")), []byte(l.Token)) == 1 {
 		return 0, nil
+	}
+
+	// Password guessing budget per peer and link: bcrypt slows each try,
+	// the budget stops the tries.
+	if !sharePasswordLimiter.checkBucket(w, r, peerIP(r)+"\x00"+l.Hash) {
+		return http.StatusTooManyRequests, nil
 	}
 
 	password := r.Header.Get("X-SHARE-PASSWORD")

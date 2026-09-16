@@ -9,6 +9,7 @@ and `MIGRATION.md` for upgrading from v2.
 ### Fixed
 
 * Subtitle conversion cap (`http/subtitle.go`): `.srt` buffered the whole file unbounded. Files over 5 MiB are rejected with 413 (size pre-check plus capped read); test asserts the rejection.
+* Share password guessing budget (`http/public.go`, `http/ratelimit.go`): anyone holding a link hash could try passwords without limit. Guesses are budgeted per peer and link (30/min, `429` + `Retry-After`); token bypass and unprotected links unaffected. Test guesses to 429.
 
 ## [0.1.0-ng] - 2026-09-16
 

@@ -25,9 +25,10 @@ const (
 	maxAuthBodySize = 1 << 20 // 1 MiB
 
 	// Unauthenticated password-spray budgets per TCP peer and minute.
-	maxLoginAttempts  = 10
-	maxSignupAttempts = 10
-	rateLimitWindow   = time.Minute
+	maxLoginAttempts         = 10
+	maxSignupAttempts        = 10
+	maxSharePasswordAttempts = 30
+	rateLimitWindow          = time.Minute
 )
 
 type userInfo struct {

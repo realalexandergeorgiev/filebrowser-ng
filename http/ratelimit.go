@@ -69,7 +69,14 @@ func peerIP(r *http.Request) string {
 // Retry-After hint when it is spent. It reports whether the request may
 // proceed.
 func (l *rateLimiter) check(w http.ResponseWriter, r *http.Request) bool {
-	ok, retryAfter := l.allow(peerIP(r))
+	return l.checkBucket(w, r, peerIP(r))
+}
+
+// checkBucket enforces the budget for an explicit bucket key (for example
+// peer plus resource), so unrelated traffic does not share a budget.
+func (l *rateLimiter) checkBucket(w http.ResponseWriter, r *http.Request, bucket string) bool {
+	ok, retryAfter := l.allow(bucket)
+	_ = r
 	if ok {
 		return true
 	}
