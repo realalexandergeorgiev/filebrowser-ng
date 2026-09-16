@@ -111,6 +111,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.Bool("disableTypeDetectionByHeader", false, "disables type detection by reading file headers")
 	flags.Bool("disableImageResolutionCalc", false, "disables image resolution calculation by reading image files")
 	flags.Bool("followExternalSymlinks", false, "follow symlinks whose target is outside the user scope (unsafe)")
+	flags.StringSlice("trustedProxies", nil, "IPs/CIDRs proxy auth accepts logins from (matched against the direct peer; default loopback only)")
 }
 
 var rootCmd = &cobra.Command{
@@ -356,6 +357,10 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 
 	if v.IsSet("followExternalSymlinks") {
 		server.FollowExternalSymlinks = v.GetBool("followExternalSymlinks")
+	}
+
+	if v.IsSet("trustedProxies") {
+		server.TrustedProxies = v.GetStringSlice("trustedProxies")
 	}
 
 	if isAddrSet && isSocketSet {

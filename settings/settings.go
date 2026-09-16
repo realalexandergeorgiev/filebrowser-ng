@@ -60,6 +60,12 @@ type Server struct {
 	TokenExpirationTime    string `json:"tokenExpirationTime"`
 	FollowExternalSymlinks bool   `json:"followExternalSymlinks"`
 
+	// TrustedProxies lists the IPs/CIDRs proxy auth accepts logins from,
+	// matched against the direct TCP peer. Empty trusts loopback only.
+	// Requests from any other peer cannot log in via the proxy header,
+	// so a bypassed or missing proxy no longer means admin access.
+	TrustedProxies []string `json:"trustedProxies"`
+
 	// CaseInsensitiveFs is detected from Root at startup rather than
 	// configured, and tells the rule checker to match paths case-insensitively.
 	// It is never persisted.

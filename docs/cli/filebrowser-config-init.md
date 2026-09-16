@@ -69,6 +69,7 @@ filebrowser config init [flags]
       --sorting.asc                      sorting by ascending order
       --sorting.by string                sorting mode (name, size or modified) (default "name")
       --tokenExpirationTime string       user session timeout (default "2h")
+      --trustedProxies strings           IPs/CIDRs proxy auth accepts logins from (matched against the direct peer; default loopback only)
       --tus.chunkSize uint               the tus chunk size (default 10485760)
       --tus.retryCount uint16            the tus retry count (default 5)
       --viewMode string                  view mode for users (default "list")

@@ -135,6 +135,7 @@ func TestExpiredTokenNeedsProxyAssertion(t *testing.T) {
 
 	get := func(token, proxyUser string) *httptest.ResponseRecorder {
 		req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:1234"
 		req.Header.Set("X-Auth", token)
 		if proxyUser != "" {
 			req.Header.Set(proxyHeader, proxyUser)

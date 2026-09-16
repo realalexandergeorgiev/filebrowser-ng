@@ -73,6 +73,7 @@ filebrowser [flags]
       --socket string                  socket to listen to (cannot be used with address, port, cert nor key flags)
       --socketPerm uint32              unix socket file permissions (default 438)
       --tokenExpirationTime string     user session timeout (default "2h")
+      --trustedProxies strings         IPs/CIDRs proxy auth accepts logins from (matched against the direct peer; default loopback only)
       --username string                username for the first user when using quick setup (default "admin")
 ```
 

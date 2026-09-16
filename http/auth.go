@@ -91,6 +91,11 @@ func renewableErr(err error, r *http.Request, d *data, tk *authToken) bool {
 // the token was issued for. The username is resolved through the user store, so
 // that it is matched exactly as a regular proxy login would match it.
 func proxyAsserts(r *http.Request, d *data, id uint) bool {
+	// The waiver is worthless if anyone off-proxy can spoof the header:
+	// require the request to arrive via a trusted proxy peer first.
+	if !fbAuth.TrustedProxyPeer(r, d.server.TrustedProxies) {
+		return false
+	}
 	auther, err := d.store.Auth.Get(fbAuth.MethodProxyAuth)
 	if err != nil {
 		return false

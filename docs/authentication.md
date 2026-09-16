@@ -37,8 +37,14 @@ filebrowser config set --auth.method=proxy --auth.header=X-My-Header
 Where `X-My-Header` is the HTTP header provided by your proxy with the username.
 
 > [!WARNING]
-> 
-> File Browser will blindly trust the provided header. If the proxy can be bypassed, an attacker could simply attach the header and get admin access. Please ensure that File Browser is not accessible from untrusted networks, and that the proxy is correctly configured to strip/overwrite the header from client requests.
+>
+> File Browser only honors the header when the request arrives via a trusted proxy peer (`Server.TrustedProxies`, IPs/CIDRs matched against the direct TCP peer; forwarded headers are ignored because clients can spoof them). The default trusts loopback only (`127.0.0.0/8`, `::1`), which covers a co-located proxy. If your proxy runs on another host, configure it:
+>
+> ```sh
+> filebrowser config set --trustedProxies=10.0.0.0/8,192.168.1.10
+> ```
+>
+> Logins from any other peer are rejected, so a bypassed or missing proxy no longer yields admin access. The same trust check gates the expired-token waiver: a leaked token plus a spoofed header is useless off-proxy.
 
 ## No Authentication
 

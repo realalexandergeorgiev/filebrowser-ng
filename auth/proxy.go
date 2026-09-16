@@ -2,7 +2,10 @@ package auth
 
 import (
 	"errors"
+	"net"
 	"net/http"
+	"os"
+	"strings"
 
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
 	"github.com/filebrowser/filebrowser/v2/settings"
@@ -17,8 +20,14 @@ type ProxyAuth struct {
 	Header string `json:"header"`
 }
 
-// Auth authenticates the user via an HTTP header.
+// Auth authenticates the user via an HTTP header. The header is only
+// honored when the request arrived via a trusted proxy (see
+// TrustedProxyPeer); otherwise anyone reaching the app directly could
+// attach the header and log in as any user, including an admin.
 func (a ProxyAuth) Auth(r *http.Request, usr users.Store, setting *settings.Settings, srv *settings.Server) (*users.User, error) {
+	if !TrustedProxyPeer(r, srv.TrustedProxies) {
+		return nil, os.ErrPermission
+	}
 	username := r.Header.Get(a.Header)
 	user, err := usr.Get(srv.Root, srv.FollowExternalSymlinks, username)
 	if errors.Is(err, fberrors.ErrNotExist) {
@@ -60,6 +69,42 @@ func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, srv *
 	}
 
 	return user, nil
+}
+
+// TrustedProxyPeer reports whether r arrived via a trusted proxy. Entries
+// are plain IPs or CIDRs matched against the direct TCP peer; forwarded
+// headers are deliberately ignored because clients can spoof them. An empty
+// list trusts loopback only, so proxy auth keeps working for a co-located
+// proxy while direct exposure authenticates nobody.
+func TrustedProxyPeer(r *http.Request, trusted []string) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	ip := net.ParseIP(strings.TrimSpace(host))
+	if ip == nil {
+		return false
+	}
+	if len(trusted) == 0 {
+		trusted = []string{"127.0.0.0/8", "::1/128"}
+	}
+	for _, entry := range trusted {
+		entry = strings.TrimSpace(entry)
+		if strings.Contains(entry, "/") {
+			_, cidr, err := net.ParseCIDR(entry)
+			if err != nil {
+				continue
+			}
+			if cidr.Contains(ip) {
+				return true
+			}
+			continue
+		}
+		if ip.Equal(net.ParseIP(entry)) {
+			return true
+		}
+	}
+	return false
 }
 
 // LoginPage tells that proxy auth doesn't require a login page.

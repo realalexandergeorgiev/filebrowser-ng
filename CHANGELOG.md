@@ -24,6 +24,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 
 * Command execution, runner, hooks, web shell (`#5199`, `GHSA-jvpw-637p-h3pw`, `CVE-2026-54090`): deleted `runner/`, `http/commands.go` (`GET /api/command`), `cmd cmds*`, `docs/command-execution.md`, `Settings.Shell`/`Settings.Commands`, `Server.EnableExec`, `--disableExec` flag and `config set` shell handling. File operations (`resource.go`, TUS) now run directly without hook wrappers; `settingsPut` no longer persists shell/commands. Per-user `Commands` and `perm.execute` stay as deprecated inert fields until the frontend stops sending them (frontend shell UI auto-disables without the backend flag).
 * Hook authentication (`CVE-2026-54088`): deleted `auth/hook.go` (external command received attacker-controlled `USERNAME`/`PASSWORD` in env, hook output could grant `admin`/`scope`/`commands`), the `auth.command` flag, the `config import` hook branch, the dead `Server.authHook` field, and the `docs/authentication.md` hook section. Remaining methods: `json`, `proxy`, `noauth`; a stored `hook` method is now rejected as invalid.
+* Proxy auth trust (`GO-2026-5966`): the header is only honored from trusted peers — new `Server.TrustedProxies` (IPs/CIDRs, `--trustedProxies` / `config set`, loopback-only by default), enforced in `ProxyAuth.Auth` and in the expired-token waiver (`proxyAsserts`); forwarded headers are ignored. Direct header forgery is rejected instead of yielding admin access.
 
 ### Changed
 
