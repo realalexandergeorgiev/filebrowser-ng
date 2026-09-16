@@ -28,6 +28,28 @@ func NewStorage(back StorageBackend) *Storage {
 	return &Storage{back: back}
 }
 
+// sweepExpired deletes expired links and returns only the live ones. It must
+// not mutate the slice it ranges over (append-in-range skips consecutive
+// expiries), so it builds a fresh result instead.
+func (s *Storage) sweepExpired(links []*Link) ([]*Link, error) {
+	now := time.Now().Unix()
+	kept := links[:0]
+	for _, link := range links {
+		if link.Expire != 0 && link.Expire <= now {
+			if err := s.Delete(link.Hash); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		kept = append(kept, link)
+	}
+	// Clear the tail so dropped entries cannot linger via the backing array.
+	for i := len(kept); i < len(links); i++ {
+		links[i] = nil
+	}
+	return kept, nil
+}
+
 // All wraps a StorageBackend.All.
 func (s *Storage) All() ([]*Link, error) {
 	links, err := s.back.All()
@@ -36,16 +58,7 @@ func (s *Storage) All() ([]*Link, error) {
 		return nil, err
 	}
 
-	for i, link := range links {
-		if link.Expire != 0 && link.Expire <= time.Now().Unix() {
-			if err := s.Delete(link.Hash); err != nil {
-				return nil, err
-			}
-			links = append(links[:i], links[i+1:]...)
-		}
-	}
-
-	return links, nil
+	return s.sweepExpired(links)
 }
 
 // FindByUserID wraps a StorageBackend.FindByUserID.
@@ -56,16 +69,7 @@ func (s *Storage) FindByUserID(id uint) ([]*Link, error) {
 		return nil, err
 	}
 
-	for i, link := range links {
-		if link.Expire != 0 && link.Expire <= time.Now().Unix() {
-			if err := s.Delete(link.Hash); err != nil {
-				return nil, err
-			}
-			links = append(links[:i], links[i+1:]...)
-		}
-	}
-
-	return links, nil
+	return s.sweepExpired(links)
 }
 
 // GetByHash wraps a StorageBackend.GetByHash.
@@ -98,16 +102,7 @@ func (s *Storage) Gets(path string, id uint) ([]*Link, error) {
 		return nil, err
 	}
 
-	for i, link := range links {
-		if link.Expire != 0 && link.Expire <= time.Now().Unix() {
-			if err := s.Delete(link.Hash); err != nil {
-				return nil, err
-			}
-			links = append(links[:i], links[i+1:]...)
-		}
-	}
-
-	return links, nil
+	return s.sweepExpired(links)
 }
 
 // Save wraps a StorageBackend.Save

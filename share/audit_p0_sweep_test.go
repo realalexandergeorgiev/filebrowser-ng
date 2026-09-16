@@ -1,14 +1,13 @@
 package share
 
-// Audit characterization for H-share expiry sweep (ARCHITEKTUR.md §3,
-// share/storage.go:39-46,59-66,101-108): All/FindByUserID/Gets delete expired
-// links while ranging over the same slice
-// (`links = append(links[:i], links[i+1:]...)` inside `for i, link := range links`),
-// so consecutive expiries are skipped and stay listed + stored.
+// Regression for the H-share expiry sweep (ARCHITEKTUR.md §3,
+// share/storage.go): All/FindByUserID/Gets used to delete expired links while
+// ranging over the same slice (`append(links[:i], links[i+1:]...)` inside
+// `for i, link := range links`), so consecutive expiries were skipped and
+// stayed listed + stored. Fixed by filtering into a fresh result.
 //
-// Pinned v2 behavior: [expiredA, expiredB, validC].All() still returns an
-// expired link. filebrowser-ng target: no expired link is returned or kept;
-// flip this test to assert zero expired links when the sweeper is fixed.
+// ng behavior: [expiredA, expiredB, validC].All() returns only validC and the
+// backend no longer holds the expired links.
 import (
 	"errors"
 	"testing"
@@ -55,7 +54,7 @@ func (b *auditStubBackend) Delete(hash string) error {
 }
 func (b *auditStubBackend) DeleteWithPathPrefix(_ string, _ uint) error { return nil }
 
-func TestAuditExpirySweepSkipsConsecutiveExpired(t *testing.T) {
+func TestExpirySweepRemovesConsecutiveExpired(t *testing.T) {
 	past := time.Now().Add(-time.Hour).Unix()
 	back := &auditStubBackend{links: []*Link{
 		{Hash: "expiredA", Expire: past},
@@ -66,14 +65,18 @@ func TestAuditExpirySweepSkipsConsecutiveExpired(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All failed: %v", err)
 	}
-	expired := 0
 	for _, l := range got {
 		if l.Expire != 0 && l.Expire <= time.Now().Unix() {
-			expired++
+			t.Fatalf("VULNERABLE: expired link %q still listed", l.Hash)
 		}
 	}
-	if expired == 0 {
-		t.Fatalf("AUDIT CHANGED: no expired link survived All(); v2 baseline leaks at least one, ng target leaks zero")
+	if len(got) != 1 || got[0].Hash != "validC" {
+		t.Fatalf("All() = %d links, want only [validC]", len(got))
 	}
-	t.Logf("pinned v2 behavior: %d expired link(s) still listed (want 0 after fix)", expired)
+	if _, err := back.GetByHash("expiredA"); err == nil {
+		t.Fatalf("VULNERABLE: expiredA still stored")
+	}
+	if _, err := back.GetByHash("expiredB"); err == nil {
+		t.Fatalf("VULNERABLE: expiredB still stored")
+	}
 }

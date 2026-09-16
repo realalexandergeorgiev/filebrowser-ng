@@ -13,6 +13,10 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * `Taskfile.yml`: reproducible backend builds (`-trimpath`, version fallback `0.0.0-ng` without tags), new `audit:go` (`go vet` + `govulncheck`), `audit:frontend` (`pnpm audit`), `audit`, `test:go` (`-race`).
 * Audit PoCs (characterization, green on v2 baseline, must flip with the rewrite): `http/audit_p0_sessions_test.go` (LastUpdate hint-only, P0-C1), `runner/audit_p0_exec_test.go` (shell allowlist shape, P0-C4), `share/audit_p0_sweep_test.go` (consecutive-expiry sweep skip).
 
+### Fixed
+
+* Share expiry sweep (`share/storage.go`): `All`/`FindByUserID`/`Gets` mutated the slice while ranging over it, skipping consecutive expired links so they stayed listed and stored. Now filters into a fresh result via `sweepExpired`; PoC flipped to assert only live links are returned and expiries are deleted.
+
 ### Changed
 
 * Fork intent: full rewrite, full break (no v2 DB/config/API compatibility); command execution removal; server-side sessions; single-binary selfhosted; docs in English.
