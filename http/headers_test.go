@@ -144,7 +144,121 @@ func TestIndexCSPNonceMatchesInlineScript(t *testing.T) {
 	if !strings.Contains(csp, "style-src 'self' 'unsafe-inline'") {
 		t.Errorf("style-src must allow self and inline: %q", csp)
 	}
+	if !strings.Contains(csp, "worker-src 'self' blob:") {
+		t.Errorf("worker-src must allow self and blob (ACE workers): %q", csp)
+	}
 	if !strings.Contains(rec.Body.String(), `nonce="`+nonce+`"`) {
 		t.Errorf("inline bootstrap script does not carry the CSP nonce %q", nonce)
+	}
+}
+
+// indexHandlerWithAuth builds a handler whose index template exposes the JSON
+// config, so tests can assert on both the CSP header and the injected config.
+func indexHandlerWithAuth(t *testing.T, auther fbAuth.Auther) http.Handler {
+	t.Helper()
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	st, err := bolt.NewStorage(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Settings.Save(&settings.Settings{Key: []byte("test-signing-key"), AuthMethod: fbAuth.MethodJSONAuth}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Auth.Save(auther); err != nil {
+		t.Fatal(err)
+	}
+	const indexHTML = `<html><head>` +
+		`<script nonce="[{[ .Nonce ]}]">window.FileBrowser=[{[ .Json ]}];</script>` +
+		`</head><body><div id="app"></div></body></html>`
+	h, err := NewHandler(nil, diskcache.NewNoOp(), newMemoryUploadCache(), st, &settings.Server{},
+		fstest.MapFS{"public/index.html": {Data: []byte(indexHTML)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return h
+}
+
+func getIndex(t *testing.T, h http.Handler) *httptest.ResponseRecorder {
+	t.Helper()
+	req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("index = %d body=%q, want 200", rec.Code, rec.Body.String())
+	}
+	return rec
+}
+
+// When reCAPTCHA is enabled, the policy must allow exactly its https origin
+// (plus gstatic) and the injected config must enable it.
+func TestIndexCSPAllowsRecaptchaOrigin(t *testing.T) {
+	h := indexHandlerWithAuth(t, &fbAuth.JSONAuth{ReCaptcha: &fbAuth.ReCaptcha{
+		Host: "https://www.google.com", Key: "k", Secret: "s",
+	}})
+	rec := getIndex(t, h)
+	csp := rec.Header().Get("Content-Security-Policy")
+	for _, want := range []string{"https://www.google.com", "https://www.gstatic.com"} {
+		if !strings.Contains(csp, want) {
+			t.Errorf("CSP missing reCAPTCHA origin %q: %q", want, csp)
+		}
+	}
+	if !strings.Contains(csp, "frame-src") {
+		t.Errorf("CSP must set frame-src for the reCAPTCHA iframe: %q", csp)
+	}
+	if !strings.Contains(rec.Body.String(), `"ReCaptcha":true`) {
+		t.Errorf("reCAPTCHA should be enabled in the injected config")
+	}
+}
+
+// An insecure or malformed reCAPTCHA host must not widen the policy; reCAPTCHA
+// is disabled instead.
+func TestIndexCSPRejectsInsecureRecaptchaHost(t *testing.T) {
+	h := indexHandlerWithAuth(t, &fbAuth.JSONAuth{ReCaptcha: &fbAuth.ReCaptcha{
+		Host: "http://evil.example", Key: "k", Secret: "s",
+	}})
+	rec := getIndex(t, h)
+	csp := rec.Header().Get("Content-Security-Policy")
+	if strings.Contains(csp, "evil.example") {
+		t.Errorf("CSP must not allow an insecure reCAPTCHA host: %q", csp)
+	}
+	if !strings.Contains(csp, "script-src 'self' 'nonce-") {
+		t.Errorf("script-src must stay nonce-only: %q", csp)
+	}
+	if !strings.Contains(rec.Body.String(), `"ReCaptcha":false`) {
+		t.Errorf("reCAPTCHA should be disabled for an invalid host")
+	}
+}
+
+// Plain .js assets without a precompressed sibling (the vendored ACE files)
+// must be served uncompressed rather than 404.
+func TestStaticServesUncompressedJS(t *testing.T) {
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	st, err := bolt.NewStorage(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Settings.Save(&settings.Settings{Key: []byte("test-signing-key")}); err != nil {
+		t.Fatal(err)
+	}
+	_, static := getStaticHandlers(st, &settings.Server{}, fstest.MapFS{
+		"ace/worker-json.js": {Data: []byte("worker-source")},
+	})
+
+	req, _ := http.NewRequest(http.MethodGet, "/static/ace/worker-json.js", http.NoBody)
+	rec := httptest.NewRecorder()
+	static.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("uncompressed .js = %d, want 200", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "worker-source") {
+		t.Errorf("body = %q, want the uncompressed source", rec.Body.String())
 	}
 }

@@ -1,8 +1,27 @@
 import path from "node:path";
-import { defineConfig } from "vite";
+import fs from "node:fs";
+import { defineConfig, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import { compression } from "vite-plugin-compression2";
+
+// copyAceAssets vendors the ACE editor's runtime files (modes, themes,
+// workers) into the build output so the app can load them from its own origin.
+// This keeps the strict CSP free of a CDN exception and removes the external
+// jsdelivr dependency.
+function copyAceAssets(): Plugin {
+  return {
+    name: "copy-ace-assets",
+    apply: "build",
+    closeBundle() {
+      fs.cpSync(
+        path.resolve(__dirname, "node_modules/ace-builds/src-min-noconflict"),
+        path.resolve(__dirname, "dist/ace"),
+        { recursive: true }
+      );
+    },
+  };
+}
 
 const plugins = [
   vue(),
@@ -10,6 +29,7 @@ const plugins = [
     include: [path.resolve(__dirname, "./src/i18n/**/*.json")],
   }),
   compression({ include: /\.js$/, deleteOriginalAssets: false }),
+  copyAceAssets(),
 ];
 
 const resolve = {

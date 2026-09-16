@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -36,30 +37,52 @@ func newNonce() string {
 
 // indexCSP is the baseline policy hardened for the app shell: scripts only
 // from self or the per-request nonce; styles from self plus inline (Vue sets
-// inline style attributes at runtime).
-func indexCSP(nonce string) string {
+// inline style attributes at runtime); web workers from self or blob (the
+// self-hosted ACE editor builds its workers from blob URLs).
+//
+// recaptchaOrigins lists admin-configured reCAPTCHA hosts (plus Google's
+// static asset host). They are the only external origins allowed, and only
+// when reCAPTCHA is actually enabled, because reCAPTCHA cannot be self-hosted.
+func indexCSP(nonce string, recaptchaOrigins []string) string {
+	extra := ""
+	if len(recaptchaOrigins) > 0 {
+		extra = " " + strings.Join(recaptchaOrigins, " ")
+	}
 	return "default-src 'self'; " +
-		"script-src 'self' 'nonce-" + nonce + "'; " +
-		"style-src 'self' 'unsafe-inline'; " +
-		"img-src 'self' data: blob:; " +
-		"font-src 'self' data:; " +
+		"script-src 'self' 'nonce-" + nonce + "'" + extra + "; " +
+		"style-src 'self' 'unsafe-inline'" + extra + "; " +
+		"img-src 'self' data: blob:" + extra + "; " +
+		"font-src 'self' data:" + extra + "; " +
+		"connect-src 'self'" + extra + "; " +
+		"frame-src 'self'" + extra + "; " +
 		"manifest-src 'self' blob:; " +
+		"worker-src 'self' blob:; " +
 		"object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+}
+
+// recaptchaCSPOrigins validates the configured reCAPTCHA host and returns the
+// CSP sources it needs. Only https origins are accepted; an invalid or
+// plaintext host is ignored (reCAPTCHA is disabled in that case), so a
+// misconfiguration cannot silently widen the policy to an insecure origin.
+func recaptchaCSPOrigins(host string) []string {
+	u, err := url.Parse(strings.TrimSpace(host))
+	if err != nil || u.Scheme != "https" || u.Host == "" {
+		return nil
+	}
+	return []string{"https://" + u.Host, "https://www.gstatic.com"}
 }
 
 func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys fs.FS, file, contentType string) (int, error) {
 	w.Header().Set("Content-Type", contentType)
-
-	nonce := newNonce()
-	w.Header().Set("Content-Security-Policy", indexCSP(nonce))
 
 	auther, err := d.store.Auth.Get(d.settings.AuthMethod)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
+	var recaptchaOrigins []string
+
 	data := map[string]interface{}{
-		"Nonce":                 nonce,
 		"Name":                  d.settings.Branding.Name,
 		"DisableExternal":       d.settings.Branding.DisableExternal,
 		"DisableUsedPercentage": d.settings.Branding.DisableUsedPercentage,
@@ -102,12 +125,22 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 
 		auther := raw.(*auth.JSONAuth)
 
-		if auther.ReCaptcha != nil {
-			data["ReCaptcha"] = auther.ReCaptcha.Key != "" && auther.ReCaptcha.Secret != ""
-			data["ReCaptchaHost"] = auther.ReCaptcha.Host
-			data["ReCaptchaKey"] = auther.ReCaptcha.Key
+		if auther.ReCaptcha != nil && auther.ReCaptcha.Key != "" && auther.ReCaptcha.Secret != "" {
+			origins := recaptchaCSPOrigins(auther.ReCaptcha.Host)
+			if origins == nil {
+				log.Printf("WARNING: reCAPTCHA host %q is not a valid https URL; disabling reCAPTCHA", auther.ReCaptcha.Host)
+			} else {
+				data["ReCaptcha"] = true
+				data["ReCaptchaHost"] = auther.ReCaptcha.Host
+				data["ReCaptchaKey"] = auther.ReCaptcha.Key
+				recaptchaOrigins = origins
+			}
 		}
 	}
+
+	nonce := newNonce()
+	data["Nonce"] = nonce
+	w.Header().Set("Content-Security-Policy", indexCSP(nonce, recaptchaOrigins))
 
 	b, err := json.Marshal(data)
 	if err != nil {
@@ -201,7 +234,10 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 
 		f, err := assetsFs.Open(r.URL.Path + ".gz")
 		if err != nil {
-			return http.StatusNotFound, err
+			// Assets without a precompressed sibling (e.g. the vendored
+			// ace-builds directory) are served uncompressed.
+			http.FileServer(http.FS(assetsFs)).ServeHTTP(w, r)
+			return 0, nil
 		}
 		defer f.Close()
 

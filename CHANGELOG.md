@@ -6,6 +6,14 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+## [0.3.1-ng] - 2026-09-16
+
+### Fixed
+
+* ACE editor under CSP (`frontend/vite.config.ts`, `frontend/src/views/files/Editor.vue`, `http/static.go`): the editor loaded its modes, themes and workers from jsdelivr, which the strict `script-src 'self'` blocked. The ace-builds runtime files are now vendored into the build output (`dist/ace`) and loaded from `/static/ace/` on our own origin; the index CSP gains `worker-src 'self' blob:` for ACE's blob workers. The static handler now serves a `.js` file uncompressed when it has no precompressed `.gz` sibling (needed for the vendored assets) instead of 404ing.
+* reCAPTCHA under CSP (`http/static.go`): the login reCAPTCHA script loads from an external host, which `script-src 'self'` blocked. When reCAPTCHA is enabled, the index policy now additionally allows the admin-configured https host (plus `https://www.gstatic.com`) for script/style/img/font/connect/frame; a non-https or malformed host disables reCAPTCHA instead of widening the policy. Tests assert both the allowed and the rejected host cases.
+* Verified in a real browser (headless Chromium + CDP): the ACE editor loads with the file content and zero CSP violations.
+
 ## [0.3.0-ng] - 2026-09-16
 
 ### Changed

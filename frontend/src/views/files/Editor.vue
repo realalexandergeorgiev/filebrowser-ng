@@ -81,7 +81,7 @@
 import { files as api } from "@/api";
 import buttons from "@/utils/buttons";
 import url from "@/utils/url";
-import ace, { Ace, version as ace_version } from "ace-builds";
+import ace, { Ace } from "ace-builds";
 import "ace-builds/src-noconflict/ext-language_tools";
 import modelist from "ace-builds/src-noconflict/ext-modelist";
 import DOMPurify from "dompurify";
@@ -93,6 +93,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { getEditorTheme } from "@/utils/theme";
+import { staticURL } from "@/utils/constants";
 import { marked } from "marked";
 import markedKatex from "marked-katex-extension";
 import { inject, onBeforeUnmount, onMounted, ref, watchEffect } from "vue";
@@ -172,10 +173,10 @@ onMounted(() => {
     }
   });
 
-  ace.config.set(
-    "basePath",
-    `https://cdn.jsdelivr.net/npm/ace-builds@${ace_version}/src-min-noconflict/`
-  );
+  // ACE loads modes, themes and workers on demand. Serve them from our own
+  // origin (vendored at build time under /static/ace) so the strict
+  // script-src policy does not need a CDN exception.
+  ace.config.set("basePath", `${staticURL}/ace/`);
 
   if (!layoutStore.loading) {
     initEditor(fileContent);

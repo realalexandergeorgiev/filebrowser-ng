@@ -51,6 +51,7 @@ Open work is tracked in [`TODO.md`](TODO.md) (AI-oriented backlog). Milestones s
 1. `v0.1.0-ng`: audit, docs, tooling, failing-first PoCs, P0 classes fixed (exec removal, hook auth, server-side sessions, proxy trust).
 2. `v0.2.0-ng`: HttpOnly cookies, share/TOCTOU/TUS/header/secrets hardening, deps swap.
 3. `v0.3.0-ng`: rebrand, module path rename (`github.com/realalexandergeorgiev/filebrowser-ng`), strict nonce-based CSP for the app shell, release binaries.
+4. `v0.3.1-ng`: ACE editor vendored (no CDN) and reCAPTCHA host allowed by CSP, so both work under the strict policy.
 
 Each fix = one commit (Conventional Commits), `CHANGELOG.md` updated per commit.
 

@@ -9,8 +9,8 @@ AI-oriented backlog. Read this top-to-bottom in a fresh session before touching 
 - **Go module path:** `github.com/realalexandergeorgiev/filebrowser-ng`.
   All imports use this path; there is **no** `.../v2` suffix anymore.
 - **Language/toolchain:** Go 1.26 (`go.mod`), Node >= 24 + pnpm 10 for `frontend/`.
-- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`.
-- **Version string:** `version/version.go` defaults to `0.3.0-ng`; release builds
+- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`, `v0.3.1-ng`.
+- **Version string:** `version/version.go` defaults to `0.3.1-ng`; release builds
   inject `version.Version` / `version.CommitSHA` via `-ldflags`.
 - **Prebuilt binaries:** `releases/filebrowser-ng_<os>_<arch>[.exe]` + `releases/checksums.txt`.
   Rebuild with the script in §2, then refresh `checksums.txt`.
@@ -104,17 +104,16 @@ Goal: close the guard→op race for non-content operations too.
 - Note: `openat2`/`RESOLVE_BENEATH` was evaluated and rejected (it rejects legitimate
   absolute in-scope symlinks); see `files/scoped.go` history. Do not reintroduce blindly.
 
-### P3 — Remove external CDN / unify CSP
-- `frontend/src/views/files/Editor.vue` configures ACE from jsdelivr; global CSP is
-  `script-src 'self'`, so the editor currently fails to load its assets. Either
-  self-host ACE assets (preferred) or document the CSP exception.
-- `frontend/public/index.html` injects `ReCaptchaHost` (admin-set) as an external
-  `<script src>`; the strict CSP blocks it, so reCAPTCHA login is broken under the
-  current policy. Serve/pin the reCAPTCHA script or add its host to `script-src`,
-  and validate the host is https.
-- Acceptance: editor and reCAPTCHA both work under the documented CSP, or the CSP
-  is explicitly widened with a comment; verify in a real browser (see §2 note on
-  headless Chromium).
+### P3 — CSP follow-ups
+- ACE editor: fixed — vendored under `dist/ace` (build-time copy in
+  `frontend/vite.config.ts`) and loaded from `/static/ace/`, so `script-src
+  'self'` stays strict. `worker-src 'self' blob:` is set.
+- reCAPTCHA: fixed — the index CSP allows the admin-configured https host plus
+  `https://www.gstatic.com` only while reCAPTCHA is enabled; non-https hosts
+  disable it. Re-check when touching CSP: `http/static.go` `indexCSP` /
+  `recaptchaCSPOrigins`, and verify in a real browser (see §2 smoke test).
+- Remaining hardening: consider SRI/self-hosting is N/A for reCAPTCHA; keep
+  `script-src` free of `'unsafe-inline'` and any CDN.
 
 ### P3 — Share `?token=` ergonomics
 - `http/public.go` token survives 24h sliding (see `maxShareTokenAge`). Long-lived
@@ -173,3 +172,6 @@ Goal: close the guard→op race for non-content operations too.
   `govulncheck` clean.
 - Rebrand to `filebrowser-ng`, version `0.2.0-ng`, module path renamed to
   `github.com/realalexandergeorgiev/filebrowser-ng`, release binaries + checksums.
+- App shell fixed to run under a strict nonce-based CSP; ACE editor vendored under
+  `/static/ace` (no CDN) and reCAPTCHA host allowed by CSP while enabled; sidebar
+  credits link corrected.

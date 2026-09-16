@@ -25,6 +25,7 @@ export {
   disableExternal,
   disableUsedPercentage,
   baseURL,
+  staticURL,
   logoURL,
   recaptcha,
   recaptchaKey,
