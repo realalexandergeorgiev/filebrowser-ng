@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/spf13/afero"
@@ -16,8 +17,18 @@ import (
 // base. It wraps an *afero.BasePathFs — which already provides the lexical
 // confinement — and adds a per-operation scope check on every call that would
 // dereference a symlink at the OS layer (open, stat, lstat, chmod, …).
+//
+// File content operations (Create, Open, OpenFile) additionally verify the
+// opened file itself: resolving /proc/self/fd of the fresh descriptor pins
+// the check to the file that was actually opened, so a symlink swapped
+// between the guard and the open is caught instead of served. Everywhere
+// the descriptor cannot be inspected (other platforms, non-OsFs backing)
+// the same calls fall back to the guard alone.
 type ScopedFs struct {
 	base *afero.BasePathFs
+	// verifyFD enables post-open verification. It is set when the scope is
+	// (transitively) OsFs-backed.
+	verifyFD atomic.Bool
 }
 
 var (
@@ -31,10 +42,17 @@ var (
 const maxSymlinkHops = 255
 
 func NewScopedFs(source afero.Fs, path string) *ScopedFs {
+	verify := false
 	if s, ok := source.(*ScopedFs); ok {
+		// Rebasing (e.g. public shares) keeps the inner confinement mode.
+		verify = s.verifyFD.Load()
 		source = s.base
+	} else if _, ok := source.(*afero.OsFs); ok {
+		verify = true
 	}
-	return &ScopedFs{base: afero.NewBasePathFs(source, path).(*afero.BasePathFs)}
+	s := &ScopedFs{base: afero.NewBasePathFs(source, path).(*afero.BasePathFs)}
+	s.verifyFD.Store(verify)
+	return s
 }
 
 // NewFs builds a user filesystem rooted at path. When followExternal is true it
@@ -160,7 +178,15 @@ func (s *ScopedFs) Create(name string) (afero.File, error) {
 	if err := s.guard(name); err != nil {
 		return nil, err
 	}
-	return s.base.Create(name)
+	f, err := s.base.Create(name)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.verify(f); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
 
 func (s *ScopedFs) Mkdir(name string, perm os.FileMode) error {
@@ -181,14 +207,30 @@ func (s *ScopedFs) Open(name string) (afero.File, error) {
 	if err := s.guard(name); err != nil {
 		return nil, err
 	}
-	return s.base.Open(name)
+	f, err := s.base.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.verify(f); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
 
 func (s *ScopedFs) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
 	if err := s.guard(name); err != nil {
 		return nil, err
 	}
-	return s.base.OpenFile(name, flag, perm)
+	f, err := s.base.OpenFile(name, flag, perm)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.verify(f); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
 
 func (s *ScopedFs) Remove(name string) error {

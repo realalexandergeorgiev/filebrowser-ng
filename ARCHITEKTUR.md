@@ -2,14 +2,13 @@
 
 > Fork of `filebrowser/filebrowser` (archived 2026-09-01, last release `v2.63.23`).
 > Goal: security-hardened, maintainable rewrite. Docs language: English.
-> Status: `v0.1.0-ng` (see `CHANGELOG.md`):
-> exec/runner/hooks/web shell removed (backend + frontend UI), hook auth
-> removed, proxy auth gated on trusted peers, server-side sessions done,
-> share sweep/acl/entropy fixed, TUS disclosure/truncation/offset/delete
-> fixed, branding traversal fixed, headers/rate-limits/search/timeouts/
-> preview/diskcache/recaptcha/compose hardened, router and homedir deps
-> dropped, `x/*` bumped (`govulncheck` clean). Remaining: storm/bbolt and
-> archives replacement, share password throttling, TOCTOU redesign.
+> Status: post-`v0.1.0-ng` (see `CHANGELOG.md`): all P0 classes fixed
+> (exec removed incl. UI, hook auth removed, sessions server-side with
+> HttpOnly cookies, proxy peer trust, share sweep/acl/entropy/token-lifetime
+> fixed), plus TUS, headers, rate limits, secrets, search, timeouts,
+> preview, diskcache, recaptcha, compose, subtitle, stdlib router, storm
+> removal, archives removal, TOCTOU descriptor verification. Remaining:
+> share `?token=` ergonomics, TOCTOU metadata ops, fuzzing.
 > Module path rename (`github.com/filebrowser/filebrowser/v2` →
 > `github.com/filebrowser-ng/...`) is deferred to the full rewrite to keep
 > the baseline buildable.
@@ -68,7 +67,7 @@ P0 — must die in rewrite:
 
 P1 — rebuild correctly:
 
-- TUS truncate-before-validate, no quota, `O_APPEND+Seek`, `RealPath` cache key, Redis eviction ignores delete, `tusDelete` without descendants check, `RealPath` in 400 errors. Partly `GO-2026-4713`, `GO-2025-3811`.
+- TUS truncate-before-validate, no quota, `O_APPEND+Seek`, `RealPath` cache key, Redis eviction ignores delete, `tusDelete` without descendants check, `RealPath` in 400 errors. Partly `GO-2025-3811`, `GO-2026-4713`.
 - FS TOCTOU (`guard` then `open`), lexical `RealPath`/`FullPath` vs resolved `within`, global `FollowExternalSymlinks`, `CopyDir` follows symlink-dir while walk does not.
 - Share: create without `Check`, rename hijack, 48-bit hash without rate-limit, long-lived `?token=` in URL, sweep `append` in `range` skips expiries. Partly `GO-2025-3790`.
 - Secrets/transport: `Key` in cleartext DB + `config export` (world-readable), JWT in `localStorage` + JS-readable cookie, no `HttpOnly/Secure`, pwd in logs (`cmd/root.go:510`), `PASSWORD` in hook env, hardcoded `compose.yaml` secrets, no rate-limit (delegated to fail2ban).
