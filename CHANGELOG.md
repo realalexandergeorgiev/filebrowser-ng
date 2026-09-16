@@ -30,6 +30,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * Preview request scope (`http/preview.go`): resize ran on `context.Background`, so client aborts kept burning CPU. Resize is bound to the request context (cache write stays detached by design). Test fails pre-fix, passes post-fix.
 * Disk cache locks (`diskcache/file_cache.go`): per-key mutexes accumulated forever in a map, and loads raced stores. Fixed 64-entry striped `RWMutex` set (constant memory, read-locked loads). Concurrency tests run under `-race`.
 * TUS positional writes (`http/tus_handlers.go`): `O_APPEND` voided the `Seek`, so concurrent duplicate chunks appended past the offset instead of overwriting it (20+ bytes for a 5-byte upload). Plain `O_WRONLY` plus the size check makes retries idempotent; race test corrupts pre-fix, passes post-fix.
+* Compose deployment (`compose.yaml`): builds the fork image instead of pulling upstream `latest`; mounts the documented `/srv`, `/database`, `/config` paths (the old `filebrowser:/flux/vault` mount served nothing persistently); Redis password moved from hardcoded repo secret to required `REDIS_PASSWORD` (`.env.example` added, `.env` git-ignored); Redis pinned to major `8`; restart policies added. Validated with `docker compose config`.
 * Dependencies (`go.mod`): `govulncheck` reports no reachable vulnerabilities. Bumped `x/crypto`/`x/image` (+ transitive `x/sync`/`x/sys`/`x/text`) to latest, clearing 4 of 5 uncalled module findings; `GO-2026-5932` persists unfixed upstream and is not called by this code.
 
 ### Removed

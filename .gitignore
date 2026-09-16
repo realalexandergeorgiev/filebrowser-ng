@@ -11,7 +11,8 @@ rice-box.go
 .DS_Store
 node_modules
 
-# local env files
+# local env files (never commit secrets)
+.env
 .env.local
 .env.*.local
 

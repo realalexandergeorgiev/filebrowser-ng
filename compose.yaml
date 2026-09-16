@@ -1,32 +1,46 @@
+# filebrowser-ng reference deployment. Copy .env.example to .env and set
+# REDIS_PASSWORD before starting: docker compose --env-file .env up -d
 services:
-  filebrowser:
-    container_name: filebrowser
-    image: filebrowser/filebrowser:latest
+  filebrowser-ng:
+    container_name: filebrowser-ng
+    build: .
+    image: filebrowser-ng:local
     networks:
-      - filebrowser
+      - filebrowser-ng
     ports:
       - 8000:80
     volumes:
-      - filebrowser:/flux/vault
+      - data:/srv
+      - database:/database
+      - config:/config
     environment:
-      - FB_REDIS_CACHE_URL=redis://default:filebrowser@redis:6379 # Use rediss:// for ssl
+      - FB_REDIS_CACHE_URL=redis://default:${REDIS_PASSWORD:?set REDIS_PASSWORD in .env (see .env.example)}@redis:6379 # Use rediss:// for ssl
+    depends_on:
+      - redis
+    restart: unless-stopped
 
   redis:
-    container_name: redis
-    image: redis:latest
+    container_name: filebrowser-ng-redis
+    image: redis:8
     networks:
-      - filebrowser
+      - filebrowser-ng
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?set REDIS_PASSWORD in .env (see .env.example)}
     command:
       - sh
       - -c
       - |
-        cat > /tmp/users.acl <<EOF
-        user default on >filebrowser ~* +@all
-        EOF
-        redis-server --aclfile /tmp/users.acl
+        printf 'user default on >%s ~* +@all\n' "$REDIS_PASSWORD" > /tmp/users.acl
+        exec redis-server --aclfile /tmp/users.acl
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
 
 networks:
-  filebrowser:
+  filebrowser-ng:
 
 volumes:
-  filebrowser:
+  data:
+  database:
+  config:
+  redis-data:
