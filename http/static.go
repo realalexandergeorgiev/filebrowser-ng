@@ -103,6 +103,22 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 	return 0, nil
 }
 
+// brandingFile resolves a static override request path (e.g. "img/logo.png"
+// or "custom.css") inside the branding directory. It returns false when the
+// request would escape it (e.g. "img/../../secret"), so callers fall through
+// to the embedded assets instead of serving arbitrary host files.
+func brandingFile(brandingDir, reqPath string) (string, bool) {
+	if brandingDir == "" || reqPath == "" {
+		return "", false
+	}
+	cleaned := filepath.Join(brandingDir, filepath.FromSlash(reqPath))
+	rel, err := filepath.Rel(brandingDir, cleaned)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return cleaned, true
+}
+
 func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs fs.FS) (index, static http.Handler) {
 	index = handle(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.Method != http.MethodGet {
@@ -129,7 +145,10 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 
 		if d.settings.Branding.Files != "" {
 			if strings.HasPrefix(r.URL.Path, "img/") {
-				fPath := filepath.Join(d.settings.Branding.Files, r.URL.Path)
+				fPath, ok := brandingFile(d.settings.Branding.Files, r.URL.Path)
+				if !ok {
+					return http.StatusNotFound, nil
+				}
 				_, err := os.Stat(fPath)
 				if err != nil && !os.IsNotExist(err) {
 					log.Printf("could not load branding file override: %v", err)
@@ -138,8 +157,11 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 					return 0, nil
 				}
 			} else if r.URL.Path == "custom.css" && d.settings.Branding.Files != "" {
-				http.ServeFile(w, r, filepath.Join(d.settings.Branding.Files, "custom.css"))
-				return 0, nil
+				if fPath, ok := brandingFile(d.settings.Branding.Files, "custom.css"); ok {
+					http.ServeFile(w, r, fPath)
+					return 0, nil
+				}
+				return http.StatusNotFound, nil
 			}
 		}
 
