@@ -16,6 +16,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 ### Fixed
 
 * Share expiry sweep (`share/storage.go`): `All`/`FindByUserID`/`Gets` mutated the slice while ranging over it, skipping consecutive expired links so they stayed listed and stored. Now filters into a fresh result via `sweepExpired`; PoC flipped to assert only live links are returned and expiries are deleted.
+* TUS path disclosure (`http/tus_handlers.go`): `400` errors embedded `file.RealPath()` (absolute server path) and `handle()` appends `400` errors to the response body. Directory/oﬀset errors no longer include any path; regression test `http/tus_pathleak_test.go` asserts `400` bodies contain no server path.
 
 ### Changed
 
