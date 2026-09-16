@@ -32,7 +32,13 @@ func NewHandler(
 	r := mux.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'unsafe-inline';`)
+			// Baseline hardening for every response (raw/subtitle tighten
+			// script-src further for untrusted file content). frame-ancestors
+			// blocks clickjacking; object-src/base-uri close plugin and
+			// base-tag injection; no-referrer keeps share ?token= URLs and
+			// paths out of Referer headers to third parties.
+			w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'`)
+			w.Header().Set("Referrer-Policy", "no-referrer")
 			next.ServeHTTP(w, r)
 		})
 	})

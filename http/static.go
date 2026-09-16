@@ -176,6 +176,9 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 		defer f.Close()
 
 		acceptEncoding := r.Header.Get("Accept-Encoding")
+		// The representation varies by encoding: without Vary a shared cache
+		// could serve the gzip bytes to clients that cannot decode them.
+		w.Header().Set("Vary", "Accept-Encoding")
 		if strings.Contains(acceptEncoding, "gzip") {
 			w.Header().Set("Content-Encoding", "gzip")
 			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
