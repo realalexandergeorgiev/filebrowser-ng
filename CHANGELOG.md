@@ -1,4 +1,27 @@
-# Changelog
+# Changelog — filebrowser-ng
+
+All notable changes to this fork are documented here (newest first, Keep-a-Changelog style).
+Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
+
+## [Unreleased] (filebrowser-ng bootstrap)
+
+### Added
+
+* `ARCHITEKTUR.md`: audit baseline (P0–P3 with file refs), target design (server-side sessions, no exec, new ScopedFS/share/TUS), repo/build/test conventions.
+* `README.md`: rewritten as fork readme (breaking decisions, security status, roadmap, quickstart).
+* `SECURITY.md`: supported versions for the fork, private reporting, hardening expectations until `v0.1.0-ng`.
+
+### Changed
+
+* Fork intent: full rewrite, full break (no v2 DB/config/API compatibility); command execution removal; server-side sessions; single-binary selfhosted; docs in English.
+
+### Security
+
+* No fix yet on this branch — audit complete, rewrite starts next (P0: sessions `#5216`, exec `#5199`, proxy/hook). Until then the v2 baseline vulnerabilities documented in `ARCHITEKTUR.md` §3 apply.
+
+---
+
+# Upstream Changelog (preserved)
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 

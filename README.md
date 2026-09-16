@@ -1,36 +1,62 @@
-> [!WARNING]
-> 
-> **File Browser is archived on 2026-09-01**. The last planned release has already shipped. There will be no further releases, bug fixes, or security fixes.   
-
 <p align="center">
-  <img src="./branding/banner.png" width="550"/>
+  <img src="./branding/banner.png" width="550" alt="filebrowser-ng"/>
 </p>
 
-File Browser provides a file managing interface within a specified directory and it can be used to upload, delete, preview and edit your files. It is a **create-your-own-cloud**-kind of software where you can just install it on your server, direct it to a path and access your files through a nice web interface.
+# filebrowser-ng
 
-**Background:** [Goodbye File Browser, for Real This Time](https://hacdias.com/2026/07/28/filebrowser/), July 2026.
+Security-hardened fork of [`filebrowser/filebrowser`](https://github.com/filebrowser/filebrowser) (archived 2026-09-01, last upstream `v2.63.23`).
 
-## Security
+> [!WARNING]
+> Upstream is unmaintained with known unfixed classes: command execution/runner/hooks (`#5199`) and session/JWT handling (`#5216`). Do not expose upstream directly to the internet. This fork exists to fix all known + unknown issues, critical first, via a full rewrite. Until the first hardened release, treat this branch as work-in-progress.
 
-Published advisories are listed under [security advisories](https://github.com/filebrowser/filebrowser/security/advisories),
-and reporting instructions are in [SECURITY.md](SECURITY.md). Two known issue classes
-remain unaddressed and will not be fixed:
+Background: [Goodbye File Browser, for Real This Time](https://hacdias.com/2026/07/28/filebrowser/) (July 2026).
 
-- **Command execution, runner, and hooks.** This feature is plagued with vulnerabilities across many published advisories, and would need a full rewrite to be made safe. It is disabled by default; if you re-enable it with `--disable-exec=false`, treat the ability to run commands as equivalent to shell access on the host. Background: [#5199](https://github.com/filebrowser/filebrowser/issues/5199).
-- **Session and JWT handling.** Sessions are self-contained JWTs rather than server-side identifiers, so they cannot be revoked, which means that logout, password changes, and renewal leave previously issued tokens valid until they expire, and the same refresh token can be redeemed repeatedly. Assume a leaked token is valid until expiry. Background: [#5216](https://github.com/filebrowser/filebrowser/issues/5216).
+## What changes vs upstream
 
-If you keep running File Browser, treat it as unmaintained software:
+- **Full rewrite, full break:** no DB/config/API/CLI compatibility with v2. Fresh install; import tool for users/settings only (never imports `Settings.Key`).
+- **Command execution removed:** `runner/`, web shell (`GET /api/command`), hooks, `Shell`/`Commands` fields deleted. There is no `--disable-exec` anymore because there is nothing to enable.
+- **Server-side sessions:** short access JWT (5–15 min, `iss`/`aud`/`jti` verified, `kid` rotation) + opaque rotating refresh tokens (single-use, reuse-detection, max lifetime). Revocation on logout, password change, permission/scope change, admin revoke, user delete.
+- **Single-binary selfhosted:** Bolt default, Redis optional for sessions/cache only. Non-root Docker, `0700` for DB/cache, no secrets in logs/exports.
+- See [`ARCHITEKTUR.md`](ARCHITEKTUR.md) (target design, audit findings with file refs) and [`CHANGELOG.md`](CHANGELOG.md) (per-fix entries).
 
-- **Do not expose it directly to the internet.** Put it behind a reverse proxy that terminates TLS and performs its own authentication.
-- **Keep the command runner disabled.** It is off by default, so leave it off. See [#5199](https://github.com/filebrowser/filebrowser/issues/5199) and [`docs/command-execution.md`](docs/command-execution.md).
-- **Run it unprivileged, inside a container**, with only the directory you intend to serve mounted into it.
+## Security status
 
-## Documentation
+Current branch: audit complete (`ARCHITEKTUR.md` §3), rewrite not started. Known P0 classes inherited from upstream and scheduled for removal/replacement:
 
-Documentation on how to install, configure, and build this project lives in [`docs`](docs) in this repository.
+- Stateless JWT without revocation (`GO-2025-3812`/`CVE-2025-53826`/`#5216`).
+- Proxy header blind trust (`GO-2026-5966`).
+- Hook-auth priv-esc / pre-auth RCE (`CVE-2026-54088`).
+- Runner/hook/WS RCE class (`#5199`, `GHSA-jvpw-637p-h3pw`, `CVE-2026-54090`).
 
-[CONTRIBUTING.md](CONTRIBUTING.md) documents how to build and develop the project, which remains useful to anyone forking it.
+If you run anything pre-rewrite: do not expose directly, put behind a reverse proxy with TLS + own auth, keep exec disabled (default), run unprivileged in a container with only the served directory mounted.
+
+Reporting: see [`SECURITY.md`](SECURITY.md).
+
+## Quickstart (upstream baseline, will change)
+
+```bash
+# backend (Go >= 1.25)
+go build -trimpath -o filebrowser-ng .
+# frontend (Node >= 24, pnpm >= 10)
+cd frontend && pnpm install --frozen-lockfile && pnpm run build
+```
+
+Docker / compose files are being reworked for non-root + `0700` + no hardcoded secrets. `docs/` still describes v2 and will be rewritten with the new API (`/api/v1`, OpenAPI).
+
+## Roadmap
+
+1. Bootstrap docs + tooling (`ARCHITEKTUR.md`, `govulncheck`/`pnpm audit`, `-trimpath`) — this commit.
+2. Failing-first exploit PoCs (session replay/refresh reuse, proxy forgery, symlink escape, share sweep, WS bypass).
+3. Rewrite core: sessions, proxy/hook removal, ScopedFS, share, TUS, headers/secrets.
+4. Deps swap (`gorilla/*`, `storm`, `archives`, `go-shlex`), strict CSP/cookies/rate-limits, fuzz+e2e.
+5. `v0.1.0-ng` tag. No new features before that.
+
+Each fix = one commit (Conventional Commits), `CHANGELOG.md` updated per commit.
+
+## Contributing
+
+One logical fix per PR, with regression test + `CHANGELOG.md` entry + docs update if user-visible. English for all docs. Run `go test ./...`, `govulncheck ./...`, `pnpm --dir frontend test` + `typecheck` before pushing.
 
 ## License
 
-[Apache License 2.0](LICENSE) © File Browser Contributors
+[Apache License 2.0](LICENSE) © File Browser Contributors + filebrowser-ng contributors.
