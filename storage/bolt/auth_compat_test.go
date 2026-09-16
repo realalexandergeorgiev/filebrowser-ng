@@ -19,7 +19,7 @@ func TestAuthBackendStormCompat(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	if err := save(db, "auther", &auth.ProxyAuth{Header: "X-User"}); err != nil {
+	if err := db.Set("config", "auther", &auth.ProxyAuth{Header: "X-User"}); err != nil {
 		t.Fatalf("storm save: %v", err)
 	}
 
@@ -37,7 +37,7 @@ func TestAuthBackendStormCompat(t *testing.T) {
 		t.Fatalf("raw save: %v", err)
 	}
 	back := &auth.JSONAuth{}
-	if err := get(db, "auther", back); err != nil {
+	if err := db.Get("config", "auther", back); err != nil {
 		t.Fatalf("storm read of raw row: %v", err)
 	}
 

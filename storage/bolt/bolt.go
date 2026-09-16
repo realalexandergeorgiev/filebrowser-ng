@@ -15,11 +15,11 @@ import (
 func NewStorage(db *storm.DB) (*storage.Storage, error) {
 	userStore := users.NewStorage(usersBackend{db: db})
 	shareStore := share.NewStorage(shareBackend{db: db})
-	settingsStore := settings.NewStorage(settingsBackend{db: db})
+	settingsStore := settings.NewStorage(settingsBackend{db: db.Bolt})
 	authStore := auth.NewStorage(authBackend{db: db.Bolt}, userStore)
 	sessionStore := sessions.NewStorage(sessionBackend{db: db.Bolt})
 
-	err := save(db, "version", 2)
+	err := kvPut(db.Bolt, "version", 2)
 	if err != nil {
 		return nil, err
 	}
