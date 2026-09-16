@@ -1,4 +1,4 @@
-const name: string = window.FileBrowser.Name || "File Browser";
+const name: string = window.FileBrowser.Name || "filebrowser-ng";
 const disableExternal: boolean = window.FileBrowser.DisableExternal;
 const disableUsedPercentage: boolean = window.FileBrowser.DisableUsedPercentage;
 const baseURL: string = window.FileBrowser.BaseURL;

@@ -387,7 +387,7 @@ func printToken(w http.ResponseWriter, r *http.Request, d *data, user *users.Use
 			ID:        jti,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpirationTime)),
-			Issuer:    "File Browser",
+			Issuer:    "filebrowser-ng",
 		},
 	}
 

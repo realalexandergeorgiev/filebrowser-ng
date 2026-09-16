@@ -38,7 +38,7 @@ Where `X-My-Header` is the HTTP header provided by your proxy with the username.
 
 > [!WARNING]
 >
-> File Browser only honors the header when the request arrives via a trusted proxy peer (`Server.TrustedProxies`, IPs/CIDRs matched against the direct TCP peer; forwarded headers are ignored because clients can spoof them). The default trusts loopback only (`127.0.0.0/8`, `::1`), which covers a co-located proxy. If your proxy runs on another host, configure it:
+> filebrowser-ng only honors the header when the request arrives via a trusted proxy peer (`Server.TrustedProxies`, IPs/CIDRs matched against the direct TCP peer; forwarded headers are ignored because clients can spoof them). The default trusts loopback only (`127.0.0.0/8`, `::1`), which covers a co-located proxy. If your proxy runs on another host, configure it:
 >
 > ```sh
 > filebrowser config set --trustedProxies=10.0.0.0/8,192.168.1.10
@@ -48,7 +48,7 @@ Where `X-My-Header` is the HTTP header provided by your proxy with the username.
 
 ## No Authentication
 
-We also provide a no authentication mechanism for users that want to use File Browser privately such in a home network. By setting this authentication method, the user with **id 1** will be used as the default users. Creating more users won't have any effect.
+We also provide a no authentication mechanism for users that want to use filebrowser-ng privately such in a home network. By setting this authentication method, the user with **id 1** will be used as the default users. Creating more users won't have any effect.
 
 ```sh
 filebrowser config set --auth.method=noauth

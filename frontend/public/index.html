@@ -13,7 +13,7 @@
     [{[ end ]}]
 
     <title>
-      [{[ if .Name -]}][{[ .Name ]}][{[ else ]}]File Browser[{[ end ]}]
+      [{[ if .Name -]}][{[ .Name ]}][{[ else ]}]filebrowser-ng[{[ end ]}]
     </title>
 
     <meta name="robots" content="noindex,nofollow" />
@@ -29,7 +29,7 @@
       sizes="180x180"
       href="[{[ .StaticURL ]}]/img/icons/apple-touch-icon.png"
     />
-    <meta name="apple-mobile-web-app-title" content="File Browser" />
+    <meta name="apple-mobile-web-app-title" content="filebrowser-ng" />
 
     <!-- Add to home screen for Android and modern mobile browsers -->
     <link
@@ -51,8 +51,8 @@
         return `${window.FileBrowser.StaticURL}/${url.replace(/^\/+/, "")}`;
       };
       var dynamicManifest = {
-        name: window.FileBrowser.Name || "File Browser",
-        short_name: window.FileBrowser.Name || "File Browser",
+        name: window.FileBrowser.Name || "filebrowser-ng",
+        short_name: window.FileBrowser.Name || "filebrowser-ng",
         icons: [
           {
             src:

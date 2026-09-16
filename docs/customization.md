@@ -1,10 +1,10 @@
 # Customization
 
-You can customize the styles, branding and icons of your File Browser instance in order to give it a personal touch.
+You can customize the styles, branding and icons of your filebrowser-ng instance in order to give it a personal touch.
 
 ## Custom Branding
 
-You can customize File Browser to use your own branding. This includes the following:
+You can customize filebrowser-ng to use your own branding. This includes the following:
 
 - **Name**: the name of the instance that shows up on the tab title, login pages, and some other places.
 - **Disable External Links**: disables all external links, except to the documentation.
