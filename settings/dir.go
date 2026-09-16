@@ -42,7 +42,7 @@ func (s *Settings) MakeUserDir(username, userScope, serverRoot string) (string, 
 }
 
 // CreateUserHome derives and creates the home directory for a user that is
-// being provisioned (via signup, proxy auth or hook auth) and sets user.Scope
+// being provisioned (via signup or proxy auth) and sets user.Scope
 // to the resulting path. When CreateUserDir is enabled and the caller did not
 // supply an explicit scope, the scope is cleared so that MakeUserDir derives a
 // per-user home from the username instead of falling back to the default scope

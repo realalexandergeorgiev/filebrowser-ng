@@ -11,7 +11,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * `README.md`: rewritten as fork readme (breaking decisions, security status, roadmap, quickstart).
 * `SECURITY.md`: supported versions for the fork, private reporting, hardening expectations until `v0.1.0-ng`.
 * `Taskfile.yml`: reproducible backend builds (`-trimpath`, version fallback `0.0.0-ng` without tags), new `audit:go` (`go vet` + `govulncheck`), `audit:frontend` (`pnpm audit`), `audit`, `test:go` (`-race`).
-* Audit PoCs (characterization, green on v2 baseline, must flip with the rewrite): `http/audit_p0_sessions_test.go` (LastUpdate hint-only, P0-C1), `runner/audit_p0_exec_test.go` (shell allowlist shape, P0-C4), `share/audit_p0_sweep_test.go` (consecutive-expiry sweep skip).
+* Audit PoCs (characterization, green on v2 baseline, must flip with the rewrite): `http/audit_p0_sessions_test.go` (LastUpdate hint-only, P0-C1), `share/audit_p0_sweep_test.go` (consecutive-expiry sweep skip, since fixed and flipped). The `runner/` shell-allowlist PoC was removed together with the feature.
 
 ### Fixed
 
@@ -22,6 +22,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 ### Removed
 
 * Command execution, runner, hooks, web shell (`#5199`, `GHSA-jvpw-637p-h3pw`, `CVE-2026-54090`): deleted `runner/`, `http/commands.go` (`GET /api/command`), `cmd cmds*`, `docs/command-execution.md`, `Settings.Shell`/`Settings.Commands`, `Server.EnableExec`, `--disableExec` flag and `config set` shell handling. File operations (`resource.go`, TUS) now run directly without hook wrappers; `settingsPut` no longer persists shell/commands. Per-user `Commands` and `perm.execute` stay as deprecated inert fields until the frontend stops sending them (frontend shell UI auto-disables without the backend flag).
+* Hook authentication (`CVE-2026-54088`): deleted `auth/hook.go` (external command received attacker-controlled `USERNAME`/`PASSWORD` in env, hook output could grant `admin`/`scope`/`commands`), the `auth.command` flag, the `config import` hook branch, the dead `Server.authHook` field, and the `docs/authentication.md` hook section. Remaining methods: `json`, `proxy`, `noauth`; a stored `hook` method is now rejected as invalid.
 
 ### Changed
 
@@ -29,7 +30,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 
 ### Security
 
-* No fix yet on this branch — audit complete, rewrite starts next (P0: sessions `#5216`, exec `#5199`, proxy/hook). Until then the v2 baseline vulnerabilities documented in `ARCHITEKTUR.md` §3 apply.
+* Fixed so far: share expiry sweep, TUS path disclosure, branding traversal, command execution class, hook auth. Open P0: server-side sessions (`#5216`), proxy hardening. Until those land, the remaining v2 baseline issues in `ARCHITEKTUR.md` §3 apply.
 
 ---
 

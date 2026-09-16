@@ -75,7 +75,7 @@ func TestTusErrorsDoNotLeakServerPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 	rec = serve(patch, http.MethodPatch, "/swap", "hello", map[string]string{
-		"Content-Type": "application/offset+octet-stream",
+		"Content-Type":  "application/offset+octet-stream",
 		"Upload-Offset": "0",
 	})
 	assertNoLeak("PATCH dir", rec)

@@ -16,7 +16,6 @@ filebrowser config set [flags]
 ```
       --aceEditorTheme string            ace editor's syntax highlighting theme for users
   -a, --address string                   address to listen on (default "127.0.0.1")
-      --auth.command string              command for auth.method=hook
       --auth.header string               HTTP header for auth.method=proxy
       --auth.logoutPage string           url of custom logout page
       --auth.method string               authentication type (default "json")

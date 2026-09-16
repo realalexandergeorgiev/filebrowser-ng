@@ -43,7 +43,6 @@ func addConfigFlags(flags *pflag.FlagSet) {
 
 	flags.String("auth.method", string(auth.MethodJSONAuth), "authentication type")
 	flags.String("auth.header", "", "HTTP header for auth.method=proxy")
-	flags.String("auth.command", "", "command for auth.method=hook")
 	flags.String("auth.logoutPage", "", "url of custom logout page")
 
 	flags.String("recaptcha.host", "https://www.google.com", "use another host for ReCAPTCHA. recaptcha.net might be useful in China")
@@ -152,22 +151,6 @@ func getJSONAuth(flags *pflag.FlagSet, defaultAuther map[string]interface{}) (au
 	return jsonAuth, nil
 }
 
-func getHookAuth(flags *pflag.FlagSet, defaultAuther map[string]interface{}) (auth.Auther, error) {
-	command, err := flags.GetString("auth.command")
-	if err != nil {
-		return nil, err
-	}
-	if command == "" {
-		command = defaultAuther["command"].(string)
-	}
-
-	if command == "" {
-		return nil, errors.New("you must set the flag 'auth.command' for method 'hook'")
-	}
-
-	return &auth.HookAuth{Command: command}, nil
-}
-
 func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.AuthMethod, auth.Auther, error) {
 	method, defaultAuther, err := getAuthMethod(flags, defaults...)
 	if err != nil {
@@ -182,8 +165,6 @@ func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.
 		auther = getNoAuth()
 	case auth.MethodJSONAuth:
 		auther, err = getJSONAuth(flags, defaultAuther)
-	case auth.MethodHookAuth:
-		auther, err = getHookAuth(flags, defaultAuther)
 	default:
 		return "", nil, fberrors.ErrInvalidAuthMethod
 	}

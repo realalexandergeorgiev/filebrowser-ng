@@ -114,8 +114,8 @@ func (s *Storage) Save(user *User) error {
 	return s.back.Save(user)
 }
 
-// SaveProvisioned saves a user that is being provisioned (via signup, proxy
-// auth or hook auth). When its scope was derived from the username, it first
+// SaveProvisioned saves a user that is being provisioned (via signup or
+// proxy auth). When its scope was derived from the username, it first
 // rejects the save if another user already owns that scope, so that distinct
 // usernames cannot silently share one home directory.
 //
