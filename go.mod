@@ -3,7 +3,6 @@ module github.com/filebrowser/filebrowser/v2
 go 1.26.0
 
 require (
-	github.com/asdine/storm/v3 v3.2.1
 	github.com/asticode/go-astisub v0.42.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/dsoprea/go-exif/v3 v3.0.1
@@ -49,7 +48,6 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/golang/geo v0.0.0-20260713102120-857a528af641 // indirect
-	github.com/golang/snappy v1.0.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.19.1 // indirect

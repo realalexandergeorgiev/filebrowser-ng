@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/asdine/storm/v3"
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/share"
@@ -19,6 +18,7 @@ import (
 	"github.com/filebrowser/filebrowser/v2/storage/bolt"
 	"github.com/filebrowser/filebrowser/v2/users"
 	"github.com/spf13/afero"
+	boltapi "go.etcd.io/bbolt"
 )
 
 // symlinkShareStorage builds a storage whose single user is rooted at a real
@@ -40,7 +40,7 @@ func symlinkShareStorage(t *testing.T) *storage.Storage {
 		t.Skipf("cannot create symlink on this platform: %v", err)
 	}
 
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestPublicShareSymlinkFollowedWhenEnabled(t *testing.T) {
 		t.Skipf("cannot create symlink on this platform: %v", err)
 	}
 
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}

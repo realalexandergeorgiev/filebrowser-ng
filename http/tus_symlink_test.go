@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asdine/storm/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/afero"
+	boltapi "go.etcd.io/bbolt"
 
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/settings"
@@ -37,7 +37,7 @@ func TestTusHandlersRejectSymlinkScopeEscape(t *testing.T) {
 
 	key := []byte("test-signing-key")
 
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}

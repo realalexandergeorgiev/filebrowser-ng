@@ -10,7 +10,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/asdine/storm/v3"
+	boltapi "go.etcd.io/bbolt"
 
 	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
 	"github.com/filebrowser/filebrowser/v2/diskcache"
@@ -21,7 +21,7 @@ import (
 
 func routingTestHandler(t *testing.T) http.Handler {
 	t.Helper()
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

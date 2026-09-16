@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/asdine/storm/v3"
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/rules"
 	"github.com/filebrowser/filebrowser/v2/settings"
@@ -15,6 +14,7 @@ import (
 	"github.com/filebrowser/filebrowser/v2/storage/bolt"
 	"github.com/filebrowser/filebrowser/v2/users"
 	"github.com/spf13/afero"
+	boltapi "go.etcd.io/bbolt"
 )
 
 func TestPublicShareHandlerAuthentication(t *testing.T) {
@@ -93,7 +93,7 @@ func TestPublicShareHandlerAuthentication(t *testing.T) {
 				t.Parallel()
 
 				dbPath := filepath.Join(t.TempDir(), "db")
-				db, err := storm.Open(dbPath)
+				db, err := boltapi.Open(dbPath, 0o600, nil)
 				if err != nil {
 					t.Fatalf("failed to open db: %v", err)
 				}
@@ -189,7 +189,7 @@ func TestPublicShareHandlerRules(t *testing.T) {
 			t.Parallel()
 
 			dbPath := filepath.Join(t.TempDir(), "db")
-			db, err := storm.Open(dbPath)
+			db, err := boltapi.Open(dbPath, 0o600, nil)
 			if err != nil {
 				t.Fatalf("failed to open db: %v", err)
 			}

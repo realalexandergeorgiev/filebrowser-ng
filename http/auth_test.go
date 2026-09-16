@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asdine/storm/v3"
 	"github.com/golang-jwt/jwt/v5"
+	boltapi "go.etcd.io/bbolt"
 
 	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
 	"github.com/filebrowser/filebrowser/v2/settings"
@@ -24,7 +24,7 @@ import (
 func TestSignupRejectsCollidingNormalizedScope(t *testing.T) {
 	root := t.TempDir()
 
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}

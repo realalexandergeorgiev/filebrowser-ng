@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asdine/storm/v3"
+	boltapi "go.etcd.io/bbolt"
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/filebrowser/filebrowser/v2/diskcache"
@@ -34,7 +34,7 @@ func TestAdminShareGetsHandlerMatchesOwnerScope(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}

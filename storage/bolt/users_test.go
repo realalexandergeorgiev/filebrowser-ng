@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/asdine/storm/v3"
+	boltapi "go.etcd.io/bbolt"
 
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
 	"github.com/filebrowser/filebrowser/v2/users"
@@ -15,7 +15,7 @@ import (
 // two scopes that differ only in case resolve to the same home directory, so
 // the provisioning collision check has to treat them as the same scope.
 func TestGetByScopeCaseInsensitive(t *testing.T) {
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}

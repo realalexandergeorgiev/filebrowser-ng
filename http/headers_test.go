@@ -13,7 +13,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/asdine/storm/v3"
+	boltapi "go.etcd.io/bbolt"
 
 	"github.com/filebrowser/filebrowser/v2/diskcache"
 	"github.com/filebrowser/filebrowser/v2/settings"
@@ -21,7 +21,7 @@ import (
 )
 
 func TestSecurityHeadersOnHealth(t *testing.T) {
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestSecurityHeadersOnHealth(t *testing.T) {
 }
 
 func TestGzipAssetsVaryByEncoding(t *testing.T) {
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

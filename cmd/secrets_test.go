@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/asdine/storm/v3"
+	boltapi "go.etcd.io/bbolt"
 
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/storage/bolt"
@@ -55,7 +55,7 @@ func TestWithoutKeyRedacts(t *testing.T) {
 }
 
 func TestRotateSettingsKey(t *testing.T) {
-	db, err := storm.Open(filepath.Join(t.TempDir(), "db"))
+	db, err := boltapi.Open(filepath.Join(t.TempDir(), "db"), 0o600, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

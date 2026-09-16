@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/asdine/storm/v3"
+	boltapi "go.etcd.io/bbolt"
 
 	"github.com/filebrowser/filebrowser/v2/share"
 )
@@ -19,13 +19,13 @@ func newTestShareBackend(t *testing.T) shareBackend {
 	}
 	_ = f.Close()
 
-	db, err := storm.Open(f.Name())
+	db, err := boltapi.Open(f.Name(), 0o600, nil)
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	return shareBackend{db: db.Bolt}
+	return shareBackend{db: db}
 }
 
 func remainingHashes(t *testing.T, s shareBackend) []string {
