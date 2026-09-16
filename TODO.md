@@ -55,6 +55,16 @@ Environment note (this sandbox): Node/pnpm were installed under `/tmp/opencode`
 Node 24 tarball from nodejs.org, then `corepack prepare pnpm@10.33.4 --activate`.
 The `pnpm` shim used was `/tmp/opencode/bin/pnpm` invoking the corepack `pnpm.cjs`.
 
+Browser smoke test (do this for any CSP / frontend-shell change — `curl` alone
+misses CSP violations): `chromium` (snap) + Node 24 CDP. Start the server, then in
+a separate process launch
+`chromium --headless=new --no-sandbox --remote-debugging-port=9223 about:blank`
+and drive it via the DevTools protocol from Node
+(`Runtime.enable`, `Log.enable`, `Page.navigate`, `Runtime.evaluate`). Check
+`document.querySelector('#app').__vue_app__` is truthy and the loading element is
+gone; inspect `Log.entryAdded` for "violates the following Content Security
+Policy". This is how the nonce regression was found.
+
 ## 3. Open work items (priority order)
 
 ### P1 — Fuzzing / property tests (Go native `testing.F`)
@@ -96,11 +106,15 @@ Goal: close the guard→op race for non-content operations too.
 
 ### P3 — Remove external CDN / unify CSP
 - `frontend/src/views/files/Editor.vue` configures ACE from jsdelivr; global CSP is
-  `default-src 'self'`. Either self-host ACE assets (preferred) or document the CSP
-  exception. `frontend/public/index.html` injects `ReCaptchaHost` (admin-set) — validate
-  the host scheme and restrict to https.
-- Acceptance: editor loads with `default-src 'self'` (no CDN), or CSP is explicitly
-  widened with a comment; no new console CSP errors.
+  `script-src 'self'`, so the editor currently fails to load its assets. Either
+  self-host ACE assets (preferred) or document the CSP exception.
+- `frontend/public/index.html` injects `ReCaptchaHost` (admin-set) as an external
+  `<script src>`; the strict CSP blocks it, so reCAPTCHA login is broken under the
+  current policy. Serve/pin the reCAPTCHA script or add its host to `script-src`,
+  and validate the host is https.
+- Acceptance: editor and reCAPTCHA both work under the documented CSP, or the CSP
+  is explicitly widened with a comment; verify in a real browser (see §2 note on
+  headless Chromium).
 
 ### P3 — Share `?token=` ergonomics
 - `http/public.go` token survives 24h sliding (see `maxShareTokenAge`). Long-lived

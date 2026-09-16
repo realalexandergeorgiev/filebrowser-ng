@@ -102,7 +102,7 @@
           v-else
           rel="noopener noreferrer"
           target="_blank"
-          href="https://github.com/filebrowser-ng/filebrowser-ng"
+          href="https://github.com/realalexandergeorgiev/filebrowser-ng"
           >filebrowser-ng</a
         >
         <span> {{ " " }} {{ version }}</span>

@@ -2,6 +2,8 @@ package fbhttp
 
 import (
 	"compress/gzip"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,8 +23,35 @@ import (
 	"github.com/realalexandergeorgiev/filebrowser-ng/version"
 )
 
+// newNonce returns a fresh CSP nonce for the inline bootstrap script. Using a
+// nonce lets the app shell run its one inline <script> while keeping
+// `script-src` strict ('self' + nonce) instead of enabling 'unsafe-inline'.
+func newNonce() string {
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		panic("filebrowser-ng: crypto/rand failed: " + err.Error())
+	}
+	return hex.EncodeToString(b[:])
+}
+
+// indexCSP is the baseline policy hardened for the app shell: scripts only
+// from self or the per-request nonce; styles from self plus inline (Vue sets
+// inline style attributes at runtime).
+func indexCSP(nonce string) string {
+	return "default-src 'self'; " +
+		"script-src 'self' 'nonce-" + nonce + "'; " +
+		"style-src 'self' 'unsafe-inline'; " +
+		"img-src 'self' data: blob:; " +
+		"font-src 'self' data:; " +
+		"manifest-src 'self' blob:; " +
+		"object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+}
+
 func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys fs.FS, file, contentType string) (int, error) {
 	w.Header().Set("Content-Type", contentType)
+
+	nonce := newNonce()
+	w.Header().Set("Content-Security-Policy", indexCSP(nonce))
 
 	auther, err := d.store.Auth.Get(d.settings.AuthMethod)
 	if err != nil {
@@ -30,6 +59,7 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 	}
 
 	data := map[string]interface{}{
+		"Nonce":                 nonce,
 		"Name":                  d.settings.Branding.Name,
 		"DisableExternal":       d.settings.Branding.DisableExternal,
 		"DisableUsedPercentage": d.settings.Branding.DisableUsedPercentage,

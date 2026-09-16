@@ -148,14 +148,15 @@ func requireMethod(h http.Handler, verb string) http.Handler {
 	return switchMethod(map[string]http.Handler{verb: h})
 }
 
-// secureHeaders is the baseline hardening for every response (raw/subtitle
-// tighten script-src further for untrusted file content). frame-ancestors
-// blocks clickjacking; object-src/base-uri close plugin and base-tag
-// injection; no-referrer keeps share ?token= URLs and paths out of Referer
-// headers to third parties.
+// secureHeaders is the baseline hardening for every response. The app shell
+// overrides the CSP with a stricter, nonce-based policy (see indexCSP); this
+// default applies to API/asset responses, which do not run page scripts.
+// frame-ancestors blocks clickjacking; object-src/base-uri close plugin and
+// base-tag injection; no-referrer keeps share ?token= URLs and paths out of
+// Referer headers to third parties.
 func secureHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'`)
+		w.Header().Set("Content-Security-Policy", `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'`)
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		next.ServeHTTP(w, r)
 	})
