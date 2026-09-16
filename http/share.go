@@ -167,6 +167,13 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		return errToStatus(err), err
 	}
 
+	// Rules must allow the path as well: without this, a share could be
+	// created for a rules-denied path. Access would still be refused later,
+	// but the hash would be minted and the denial oracle-exposed.
+	if !d.Check(r.URL.Path) {
+		return http.StatusForbidden, nil
+	}
+
 	var s *share.Link
 	var body share.CreateBody
 	if r.Body != nil {

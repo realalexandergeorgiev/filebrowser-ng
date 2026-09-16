@@ -22,6 +22,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * TUS truncate-before-validate (`http/tus_handlers.go`): `POST` opened the file with `O_TRUNC` before validating `Upload-Length`, emptying existing files on requests that upload nothing. Length is validated before touching disk; regression test `TestTusPostInvalidLengthDoesNotTruncate` fails on the old order, passes on the new.
 * Security headers (`http/http.go`, `http/static.go`): global CSP gains `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'self'` (clickjacking/plugin/base-tag abuse); new global `Referrer-Policy: no-referrer` keeps share `?token=` URLs out of third-party Referers; gzip assets set `Vary: Accept-Encoding` against cache poisoning. Tests in `http/headers_test.go`.
 * Brute-force budgets (`http/ratelimit.go`, `http/auth.go`): login/signup had no protection (docs delegated to fail2ban). New per-TCP-peer sliding window (10/min each, forwarded headers ignored) answers `429` with `Retry-After`. Tests in `http/ratelimit_test.go` (unit with fake clock, handler-level 403→429).
+* Share access control (`http/share.go`, `http/resource.go`): creating a share no longer skips the rules check (denied paths returned a minted hash oracle); renames invalidate shares under source and overwritten destination (share hijack). Tests fail on the old behavior, pass on the new.
 
 ### Removed
 

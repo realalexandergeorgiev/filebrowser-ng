@@ -260,8 +260,24 @@ func resourcePatchHandler(fileCache FileCache) handleFunc {
 		}
 
 		err = patchAction(r.Context(), action, src, dst, d, fileCache)
+		if err != nil {
+			return errToStatus(err), err
+		}
 
-		return errToStatus(err), err
+		// A rename moves content between paths: shares recorded under the
+		// old path would otherwise keep serving whatever lands there next,
+		// and shares under an overwritten destination would serve the
+		// attacker's replacement content (share hijack). Invalidate both.
+		if action == "rename" {
+			if derr := d.store.Share.DeleteWithPathPrefix(src, d.user.ID); derr != nil {
+				log.Printf("WARNING: Error(s) occurred while deleting shares with file: %s", derr)
+			}
+			if derr := d.store.Share.DeleteWithPathPrefix(dst, d.user.ID); derr != nil {
+				log.Printf("WARNING: Error(s) occurred while deleting shares with file: %s", derr)
+			}
+		}
+
+		return http.StatusOK, nil
 	})
 }
 

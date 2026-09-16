@@ -13,6 +13,7 @@ import (
 	"github.com/asdine/storm/v3"
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/filebrowser/filebrowser/v2/diskcache"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/share"
 	"github.com/filebrowser/filebrowser/v2/storage"
@@ -167,4 +168,94 @@ func signShareTestToken(t *testing.T, st *storage.Storage, id uint, username str
 		t.Fatalf("failed to sign token: %v", err)
 	}
 	return signed
+}
+
+// A share must not be created for a rules-denied path: minting the hash
+// would oracle-expose the denial even though access is refused later.
+func TestSharePostDeniedPathForbidden(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(userScope, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"Secret.txt", "public.txt"} {
+		if err := os.WriteFile(filepath.Join(userScope, name), []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Share: true, Download: true}
+	st := denyRuleStorage(t, userScope, "/Secret.txt", perm, key)
+	signed := signToken(t, st, perm, key)
+
+	post := func(target string) *httptest.ResponseRecorder {
+		req, _ := http.NewRequest(http.MethodPost, target, strings.NewReader(`{}`))
+		req.Header.Set("X-Auth", signed)
+		rec := httptest.NewRecorder()
+		handle(sharePostHandler, "", st, &settings.Server{Root: root}).ServeHTTP(rec, req)
+		return rec
+	}
+
+	if rec := post("/Secret.txt"); rec.Code != http.StatusForbidden {
+		t.Fatalf("share on denied path = %d, want 403", rec.Code)
+	}
+	if links, err := st.Share.Gets("/Secret.txt", 1); err == nil && len(links) != 0 {
+		t.Fatalf("VULNERABLE: share minted for denied path: %+v", links)
+	}
+	if rec := post("/public.txt"); rec.Code != http.StatusOK {
+		t.Fatalf("share on allowed path = %d body=%q, want 200", rec.Code, rec.Body.String())
+	}
+}
+
+// Renaming must invalidate shares under the source and the destination:
+// otherwise a share keeps serving whatever lands on the old path next, and
+// a share on an overwritten destination serves the replacement content.
+func TestRenameInvalidatesShares(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(userScope, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, content := range map[string]string{"a.txt": "A", "b.txt": "B"} {
+		if err := os.WriteFile(filepath.Join(userScope, name), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Share: true, Download: true, Rename: true, Modify: true, Create: true}
+	st := scopedUserStorage(t, userScope, perm, key)
+	signed := signToken(t, st, perm, key)
+	srv := &settings.Server{Root: root}
+
+	shareIt := func(target string) string {
+		req, _ := http.NewRequest(http.MethodPost, target, strings.NewReader(`{}`))
+		req.Header.Set("X-Auth", signed)
+		rec := httptest.NewRecorder()
+		handle(sharePostHandler, "", st, srv).ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("share %s = %d body=%q, want 200", target, rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatal(err)
+		}
+		return resp["hash"].(string)
+	}
+	hashA := shareIt("/a.txt")
+	hashB := shareIt("/b.txt")
+
+	req, _ := http.NewRequest(http.MethodPatch, "/a.txt?action=rename&destination=/b.txt&override=true", http.NoBody)
+	req.Header.Set("X-Auth", signed)
+	rec := httptest.NewRecorder()
+	handle(resourcePatchHandler(diskcache.NewNoOp()), "", st, srv).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("rename = %d body=%q, want 200", rec.Code, rec.Body.String())
+	}
+	for name, hash := range map[string]string{"source": hashA, "overwritten destination": hashB} {
+		if _, err := st.Share.GetByHash(hash); err == nil {
+			t.Fatalf("VULNERABLE: %s share survives rename", name)
+		}
+	}
 }
