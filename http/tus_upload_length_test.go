@@ -71,3 +71,42 @@ func TestTusPatchEnforcesUploadLength(t *testing.T) {
 		t.Fatalf("expected file content \"hello\", got %q", string(data))
 	}
 }
+
+// An invalid Upload-Length must be rejected before anything is written: the
+// POST used to open the file with O_TRUNC first and fail afterwards,
+// emptying an existing file on a request that uploads nothing.
+func TestTusPostInvalidLengthDoesNotTruncate(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(userScope, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(userScope, "keep.txt"), []byte("keepme"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Create: true, Modify: true}
+	st := scopedUserStorage(t, userScope, perm, key)
+	signed := signToken(t, st, perm, key)
+
+	cache := newMemoryUploadCache()
+	t.Cleanup(cache.Close)
+	post := handle(tusPostHandler(cache), "", st, &settings.Server{})
+
+	for _, length := range []string{"not-a-number", "-5", ""} {
+		reqPost, _ := http.NewRequest(http.MethodPost, "/keep.txt?override=true", http.NoBody)
+		reqPost.Header.Set("X-Auth", signed)
+		if length != "" {
+			reqPost.Header.Set("Upload-Length", length)
+		}
+		recPost := httptest.NewRecorder()
+		post.ServeHTTP(recPost, reqPost)
+		if recPost.Code != http.StatusBadRequest {
+			t.Fatalf("Upload-Length %q: expected 400, got %d body=%q", length, recPost.Code, recPost.Body.String())
+		}
+		if data, _ := os.ReadFile(filepath.Join(userScope, "keep.txt")); string(data) != "keepme" {
+			t.Fatalf("VULNERABLE: Upload-Length %q truncated the file to %q", length, string(data))
+		}
+	}
+}
