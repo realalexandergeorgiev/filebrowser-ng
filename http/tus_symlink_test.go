@@ -63,9 +63,14 @@ func TestTusHandlersRejectSymlinkScopeEscape(t *testing.T) {
 	}
 
 	// Forge a valid auth token for user ID 1.
+	sess, err := st.Sessions.Create(1, time.Hour)
+	if err != nil {
+		t.Fatalf("failed to create session: %v", err)
+	}
 	claims := &authToken{
 		User: userInfo{ID: 1, Username: "u", Perm: users.Permissions{Create: true, Modify: true}},
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        sess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		},

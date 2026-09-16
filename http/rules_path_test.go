@@ -41,7 +41,7 @@ func TestRuleDeniesCaseVariantWhenFsIsCaseInsensitive(t *testing.T) {
 	key := []byte("test-signing-key")
 	perm := users.Permissions{Download: true}
 	st := denyRuleStorage(t, userScope, "/Secret.txt", perm, key)
-	signed := signToken(t, perm, key)
+	signed := signToken(t, st, perm, key)
 
 	get := func(path string, caseInsensitive bool) *httptest.ResponseRecorder {
 		req, _ := http.NewRequest(http.MethodGet, path, http.NoBody)
@@ -91,7 +91,7 @@ func TestRuleDeniesTraversalToDeniedPath(t *testing.T) {
 	st := denyRuleStorage(t, userScope, "/Secret.txt", perm, key)
 
 	req, _ := http.NewRequest(http.MethodGet, "/allow/../Secret.txt", http.NoBody)
-	req.Header.Set("X-Auth", signToken(t, perm, key))
+	req.Header.Set("X-Auth", signToken(t, st, perm, key))
 	rec := httptest.NewRecorder()
 	handle(rawHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
 
@@ -109,7 +109,7 @@ func TestCanonicalizeRequestPathKeepsTrailingSlash(t *testing.T) {
 	key := []byte("test-signing-key")
 	perm := users.Permissions{Create: true, Modify: true}
 	st := scopedUserStorage(t, userScope, perm, key)
-	signed := signToken(t, perm, key)
+	signed := signToken(t, st, perm, key)
 
 	t.Run("post creates a directory", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/newdir/", http.NoBody)

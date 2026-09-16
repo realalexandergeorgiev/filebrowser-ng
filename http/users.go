@@ -36,6 +36,26 @@ func getUserID(r *http.Request) (uint, error) {
 	return uint(i), err
 }
 
+// userUpdateRevokesSessions reports whether updating the given (Title-cased,
+// possibly empty for full updates) fields must invalidate the target user's
+// login sessions. Purely cosmetic profile fields keep sessions alive;
+// identity, credential, permission, scope and rules changes do not.
+func userUpdateRevokesSessions(which []string) bool {
+	if len(which) == 0 {
+		return true
+	}
+	for _, field := range which {
+		switch strings.ToLower(field) {
+		case "locale", "viewmode", "singleclick", "redirectaftercopymove",
+			"sorting", "hidedotfiles", "dateformat", "aceeditortheme":
+			continue
+		default:
+			return true
+		}
+	}
+	return false
+}
+
 func getUser(_ http.ResponseWriter, r *http.Request) (*modifyUserRequest, error) {
 	if r.Body == nil {
 		return nil, fberrors.ErrEmptyRequest
@@ -126,6 +146,11 @@ var userDeleteHandler = withSelfOrAdmin(func(_ http.ResponseWriter, r *http.Requ
 	err := d.store.Users.Delete(d.raw.(uint))
 	if err != nil {
 		return errToStatus(err), err
+	}
+
+	// A deleted user must lose access at once, not at token expiry.
+	if err := d.store.Sessions.RevokeUser(d.raw.(uint)); err != nil {
+		log.Printf("delete user: failed to revoke sessions: %v", err)
 	}
 
 	return http.StatusOK, nil
@@ -263,6 +288,14 @@ var userPutHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request
 	err = d.store.Users.Update(req.Data, req.Which...)
 	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+
+	// Password, permission, scope and identity changes must invalidate
+	// outstanding tokens at once; purely cosmetic profile fields do not.
+	if userUpdateRevokesSessions(req.Which) {
+		if err := d.store.Sessions.RevokeUser(d.raw.(uint)); err != nil {
+			log.Printf("update user: failed to revoke sessions: %v", err)
+		}
 	}
 
 	return http.StatusOK, nil

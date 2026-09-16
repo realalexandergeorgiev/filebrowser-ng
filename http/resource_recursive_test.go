@@ -20,7 +20,7 @@ func recursiveTestHandler(t *testing.T, userScope string) (http.Handler, string)
 	perm := users.Permissions{Create: true, Modify: true, Download: true}
 	st := scopedUserStorage(t, userScope, perm, key)
 
-	return handle(resourceGetRecursiveHandler, "/api/resources/recursive", st, &settings.Server{}), signToken(t, perm, key)
+	return handle(resourceGetRecursiveHandler, "/api/resources/recursive", st, &settings.Server{}), signToken(t, st, perm, key)
 }
 
 func TestResourceRecursiveListsTree(t *testing.T) {

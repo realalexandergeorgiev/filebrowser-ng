@@ -2,6 +2,7 @@ package storage
 
 import (
 	"github.com/filebrowser/filebrowser/v2/auth"
+	"github.com/filebrowser/filebrowser/v2/sessions"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/share"
 	"github.com/filebrowser/filebrowser/v2/users"
@@ -14,4 +15,7 @@ type Storage struct {
 	Share    *share.Storage
 	Auth     *auth.Storage
 	Settings *settings.Storage
+	// Sessions holds the server-side login sessions that back the access
+	// tokens. A token whose session is unknown or expired is refused.
+	Sessions *sessions.Storage
 }

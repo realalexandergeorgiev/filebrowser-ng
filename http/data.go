@@ -23,6 +23,10 @@ type data struct {
 	user     *users.User
 	raw      interface{}
 
+	// sessionJTI is the server-side session backing the request's access
+	// token, verified by withUser. Handlers use it for renew and logout.
+	sessionJTI string
+
 	// checkerPrefix is prepended to every path before evaluating rules. It is
 	// set when the user's filesystem has been rebased onto a subdirectory (as
 	// done for public shares), so that rules — which are relative to the user's

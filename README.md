@@ -25,8 +25,8 @@ Current branch: audit complete (`ARCHITEKTUR.md` §3), rewrite underway. Upstrea
 
 - ~~Command execution/runner/hooks (`#5199`)~~ — **removed** (no `runner/`, no web shell, no hooks, no `--disable-exec`).
 - ~~Hook authentication (`CVE-2026-54088`)~~ — **removed** (remaining: `json`, `proxy`, `noauth`).
-- Stateless JWT without revocation (`GO-2025-3812`/`CVE-2025-53826`/`#5216`) — scheduled: server-side sessions next.
-- Proxy header blind trust (`GO-2026-5966`) — scheduled.
+- ~~Stateless JWT without revocation (`GO-2025-3812`/`CVE-2025-53826`/`#5216`)~~ — **done**: server-side sessions (`sessions/`, `DELETE /api/logout`, revocation on password/security change and delete).
+- Proxy header blind trust (`GO-2026-5966`) — scheduled: trusted CIDR + header strip.
 - Hook-auth priv-esc / pre-auth RCE (`CVE-2026-54088`) — scheduled (auth-hook removal).
 
 If you run anything pre-rewrite: do not expose directly, put behind a reverse proxy with TLS + own auth, keep exec disabled (default), run unprivileged in a container with only the served directory mounted.

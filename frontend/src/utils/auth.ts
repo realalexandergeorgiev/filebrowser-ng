@@ -116,6 +116,20 @@ export async function signup(username: string, password: string) {
 }
 
 export function logout(reason?: string) {
+  // Revoke the server-side session (best effort): afterwards the token is
+  // refused even though its signature is still valid.
+  const jwt = localStorage.getItem("jwt");
+  if (jwt) {
+    void fetch(`${baseURL}/api/logout`, {
+      method: "DELETE",
+      headers: {
+        "X-Auth": jwt,
+      },
+    }).catch(() => {
+      /* local logout proceeds regardless */
+    });
+  }
+
   document.cookie = "auth=; Max-Age=0; Path=/; SameSite=Strict;";
 
   const authStore = useAuthStore();

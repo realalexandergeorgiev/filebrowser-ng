@@ -50,6 +50,7 @@ func NewHandler(
 
 	tokenExpirationTime := server.GetTokenExpirationTime(DefaultTokenExpirationTime)
 	api.Handle("/login", monkey(loginHandler(tokenExpirationTime), ""))
+	api.Handle("/logout", monkey(logoutHandler, "")).Methods("DELETE")
 	api.Handle("/signup", monkey(signupHandler, ""))
 	api.Handle("/renew", monkey(renewHandler(tokenExpirationTime), ""))
 

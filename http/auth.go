@@ -14,6 +14,7 @@ import (
 
 	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	"github.com/filebrowser/filebrowser/v2/sessions"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/users"
 )
@@ -126,6 +127,24 @@ func withUser(fn handleFunc) handleFunc {
 			return http.StatusUnauthorized, nil
 		}
 
+		// The token is only a bearer pointer: the session must exist
+		// server-side, belong to the token's user and still be live.
+		// Unknown, foreign or expired sessions are refused, so logout,
+		// password/security changes and user deletion take effect at once.
+		// Tokens issued before server-side sessions existed carry no jti
+		// and are rejected: upgrade logs everyone out once.
+		if tk.ID == "" {
+			return http.StatusUnauthorized, nil
+		}
+		sess, err := d.store.Sessions.Get(tk.ID)
+		if err != nil || sess.UserID != tk.User.ID || sess.Expired(time.Now()) {
+			if err == nil {
+				_ = d.store.Sessions.Revoke(tk.ID)
+			}
+			return http.StatusUnauthorized, nil
+		}
+		d.sessionJTI = tk.ID
+
 		expiresSoon := tk.ExpiresAt != nil && time.Until(tk.ExpiresAt.Time) < time.Hour
 		updated := tk.IssuedAt != nil && tk.IssuedAt.Unix() < d.store.Users.LastUpdate(tk.User.ID)
 
@@ -134,6 +153,9 @@ func withUser(fn handleFunc) handleFunc {
 		}
 
 		d.user, err = d.store.Users.Get(d.server.Root, d.server.FollowExternalSymlinks, tk.User.ID)
+		if errors.Is(err, fberrors.ErrNotExist) {
+			return http.StatusUnauthorized, nil
+		}
 		if err != nil {
 			return http.StatusInternalServerError, err
 		}
@@ -172,9 +194,24 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 			return http.StatusInternalServerError, err
 		}
 
-		return printToken(w, r, d, user, tokenExpireTime)
+		sess, err := d.store.Sessions.Create(user.ID, tokenExpireTime)
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+
+		return printToken(w, r, d, user, tokenExpireTime, sess.JTI)
 	}
 }
+
+// logoutHandler revokes the session backing the request token. Afterwards
+// the token is refused even though its signature is still valid.
+var logoutHandler = withUser(func(_ http.ResponseWriter, _ *http.Request, d *data) (int, error) {
+	// Idempotent: logging out twice is not an error.
+	if err := d.store.Sessions.Revoke(d.sessionJTI); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
+})
 
 type signupBody struct {
 	Username string `json:"username"`
@@ -245,11 +282,19 @@ var signupHandler = func(w http.ResponseWriter, r *http.Request, d *data) (int, 
 func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		w.Header().Set("X-Renew-Token", "false")
-		return printToken(w, r, d, d.user, tokenExpireTime)
+		// Slide the session within its max lifetime; past it the user must
+		// log in again even with a cryptographically valid token.
+		if _, err := d.store.Sessions.Touch(d.sessionJTI, tokenExpireTime); err != nil {
+			if errors.Is(err, fberrors.ErrNotExist) || errors.Is(err, sessions.ErrExpired) {
+				return http.StatusUnauthorized, nil
+			}
+			return http.StatusInternalServerError, err
+		}
+		return printToken(w, r, d, d.user, tokenExpireTime, d.sessionJTI)
 	})
 }
 
-func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
+func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration, jti string) (int, error) {
 	claims := &authToken{
 		User: userInfo{
 			ID:                    user.ID,
@@ -266,6 +311,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			AceEditorTheme:        user.AceEditorTheme,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        jti,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpirationTime)),
 			Issuer:    "File Browser",

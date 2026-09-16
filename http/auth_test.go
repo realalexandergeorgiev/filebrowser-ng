@@ -109,6 +109,25 @@ func TestExpiredTokenNeedsProxyAssertion(t *testing.T) {
 		t.Fatalf("failed to sign token: %v", err)
 	}
 
+	// Same expired token, but backed by a live server-side session: the
+	// proxy owns the session lifetime, so its assertion still admits it.
+	liveSess, err := st.Sessions.Create(1, 2*time.Hour)
+	if err != nil {
+		t.Fatalf("failed to create session: %v", err)
+	}
+	proxyBacked := &authToken{
+		User: userInfo{ID: 1, Username: "u", Perm: perm},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        liveSess.JTI,
+			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
+		},
+	}
+	proxyBackedToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, proxyBacked).SignedString(key)
+	if err != nil {
+		t.Fatalf("failed to sign token: %v", err)
+	}
+
 	protected := withUser(func(w http.ResponseWriter, _ *http.Request, _ *data) (int, error) {
 		_, writeErr := w.Write([]byte("protected"))
 		return 0, writeErr
@@ -131,20 +150,26 @@ func TestExpiredTokenNeedsProxyAssertion(t *testing.T) {
 		}
 	})
 
+	t.Run("session-less token is rejected even with proxy assertion", func(t *testing.T) {
+		if rec := get(expiredToken, "u"); rec.Code != http.StatusUnauthorized {
+			t.Errorf("VULNERABLE: token without a server-side session = %d; want 401", rec.Code)
+		}
+	})
+
 	t.Run("expired token for another identity is rejected", func(t *testing.T) {
-		if rec := get(expiredToken, "someone-else"); rec.Code != http.StatusUnauthorized {
+		if rec := get(proxyBackedToken, "someone-else"); rec.Code != http.StatusUnauthorized {
 			t.Errorf("VULNERABLE: expired token with a foreign proxy identity = %d; want 401", rec.Code)
 		}
 	})
 
 	t.Run("expired token the proxy still asserts is accepted", func(t *testing.T) {
-		if rec := get(expiredToken, "u"); rec.Code != http.StatusOK {
+		if rec := get(proxyBackedToken, "u"); rec.Code != http.StatusOK {
 			t.Errorf("expired token asserted by the proxy = %d, body=%q; want 200", rec.Code, rec.Body.String())
 		}
 	})
 
 	t.Run("valid token needs no assertion", func(t *testing.T) {
-		if rec := get(signToken(t, perm, key), ""); rec.Code != http.StatusOK {
+		if rec := get(signToken(t, st, perm, key), ""); rec.Code != http.StatusOK {
 			t.Errorf("valid token = %d, body=%q; want 200", rec.Code, rec.Body.String())
 		}
 	})

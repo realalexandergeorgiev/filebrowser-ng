@@ -1,25 +1,23 @@
 package fbhttp
 
-// Audit characterization for P0-C1 (ARCHITEKTUR.md §3, #5216,
-// GO-2025-3812/CVE-2025-53826): LastUpdate is a renew-hint, not revocation.
-//
-// Current behavior pinned here: a token issued BEFORE a user update
-// (e.g. password change / permission revocation via Users.Update, which bumps
-// LastUpdate past the token's iat) is STILL ACCEPTED with 200 and only gets
-// an `X-Renew-Token: true` hint header.
-//
-// filebrowser-ng target: this same token MUST be rejected (401) after the
-// server-side session rewrite. When that lands, flip this test to assert 401.
+// Regression for P0-C1 (ARCHITEKTUR.md §3, #5216,
+// GO-2025-3812/CVE-2025-53826): tokens are bearer pointers to server-side
+// sessions. Revoking the session (logout, password/security change, user
+// deletion) turns a cryptographically valid token into 401 at once —
+// LastUpdate is only a renew hint, never the enforcement mechanism.
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/users"
 )
 
-func TestAuditLastUpdateIsHintOnly(t *testing.T) {
+func TestRevokedSessionTokenRejected(t *testing.T) {
 	key := []byte("test-signing-key")
 	perm := users.Permissions{Download: true}
 	st := scopedUserStorage(t, t.TempDir(), perm, key)
@@ -27,7 +25,22 @@ func TestAuditLastUpdateIsHintOnly(t *testing.T) {
 		t.Fatalf("failed to save settings: %v", err)
 	}
 
-	token := signToken(t, perm, key) // iat = now-1m
+	sess, err := st.Sessions.Create(1, time.Hour)
+	if err != nil {
+		t.Fatalf("failed to create session: %v", err)
+	}
+	claims := &authToken{
+		User: userInfo{ID: 1, Username: "u", Perm: perm},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        sess.JTI,
+			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
+	}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(key)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	protected := withUser(func(w http.ResponseWriter, _ *http.Request, _ *data) (int, error) {
 		_, err := w.Write([]byte("protected"))
@@ -42,23 +55,15 @@ func TestAuditLastUpdateIsHintOnly(t *testing.T) {
 	}
 
 	if rec := call(); rec.Code != http.StatusOK {
-		t.Fatalf("setup: valid token = %d, want 200", rec.Code)
+		t.Fatalf("setup: valid session token = %d, want 200", rec.Code)
 	}
 
-	// Simulate password change / permission revocation AFTER the token was issued.
-	u, err := st.Users.Get("", false, uint(1))
-	if err != nil {
-		t.Fatalf("failed to get user: %v", err)
+	// Revoke without touching the user record at all: no password change,
+	// no LastUpdate bump. The token must die anyway.
+	if err := st.Sessions.Revoke(sess.JTI); err != nil {
+		t.Fatalf("failed to revoke session: %v", err)
 	}
-	if err := st.Users.Update(u); err != nil {
-		t.Fatalf("failed to update user: %v", err)
-	}
-
-	rec := call()
-	if rec.Code != http.StatusOK {
-		t.Fatalf("AUDIT CHANGED: post-update token = %d (want 200 on v2 baseline; 401 is the ng target)", rec.Code)
-	}
-	if got := rec.Header().Get("X-Renew-Token"); got != "true" {
-		t.Fatalf("AUDIT CHANGED: X-Renew-Token = %q, want %q (hint-only signal)", got, "true")
+	if rec := call(); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("VULNERABLE: revoked-session token = %d; want 401", rec.Code)
 	}
 }

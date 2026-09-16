@@ -15,6 +15,7 @@ import (
 
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/share"
+	"github.com/filebrowser/filebrowser/v2/storage"
 	"github.com/filebrowser/filebrowser/v2/storage/bolt"
 	"github.com/filebrowser/filebrowser/v2/users"
 )
@@ -75,7 +76,7 @@ func TestAdminShareGetsHandlerMatchesOwnerScope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to construct request: %v", err)
 	}
-	req.Header.Set("X-Auth", signShareTestToken(t, admin.ID, admin.Username, adminPerm, key))
+	req.Header.Set("X-Auth", signShareTestToken(t, st, admin.ID, admin.Username, adminPerm, key))
 
 	rec := httptest.NewRecorder()
 	handle(shareGetsHandler, "", st, &settings.Server{Root: root}).ServeHTTP(rec, req)
@@ -109,7 +110,7 @@ func TestSharePostHandlerDoesNotLeakSecrets(t *testing.T) {
 	key := []byte("test-signing-key")
 	perm := users.Permissions{Share: true, Download: true}
 	st := scopedUserStorage(t, userScope, perm, key)
-	signed := signToken(t, perm, key)
+	signed := signToken(t, st, perm, key)
 
 	body := `{"password":"ShareSecret123!","expires":"24","unit":"hours"}`
 	req, _ := http.NewRequest(http.MethodPost, "/file.txt", strings.NewReader(body))
@@ -146,12 +147,17 @@ func TestSharePostHandlerDoesNotLeakSecrets(t *testing.T) {
 	}
 }
 
-func signShareTestToken(t *testing.T, id uint, username string, perm users.Permissions, key []byte) string {
+func signShareTestToken(t *testing.T, st *storage.Storage, id uint, username string, perm users.Permissions, key []byte) string {
 	t.Helper()
 
+	sess, err := st.Sessions.Create(id, time.Hour)
+	if err != nil {
+		t.Fatalf("failed to create session: %v", err)
+	}
 	claims := &authToken{
 		User: userInfo{ID: id, Username: username, Perm: perm},
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        sess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		},

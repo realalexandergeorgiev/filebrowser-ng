@@ -25,7 +25,7 @@ func TestTusPatchEnforcesUploadLength(t *testing.T) {
 	key := []byte("test-signing-key")
 	perm := users.Permissions{Create: true, Modify: true}
 	st := scopedUserStorage(t, userScope, perm, key)
-	signed := signToken(t, perm, key)
+	signed := signToken(t, st, perm, key)
 
 	cache := newMemoryUploadCache()
 	t.Cleanup(cache.Close)
