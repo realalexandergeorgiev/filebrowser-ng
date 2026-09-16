@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/rules"
@@ -36,35 +37,35 @@ func TestPublicShareHandlerAuthentication(t *testing.T) {
 			expectedStatusCode: 200,
 		},
 		"Private share, no auth provided, 401": {
-			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
+			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123", TokenCreatedAt: time.Now().Unix()},
 			req:                newHTTPRequest(t),
 			sharePerm:          true,
 			downloadPerm:       true,
 			expectedStatusCode: 401,
 		},
 		"Private share, authentication via token": {
-			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
+			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123", TokenCreatedAt: time.Now().Unix()},
 			req:                newHTTPRequest(t, func(r *http.Request) { r.URL.RawQuery = "token=123" }),
 			sharePerm:          true,
 			downloadPerm:       true,
 			expectedStatusCode: 200,
 		},
 		"Private share, authentication via invalid token, 401": {
-			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
+			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123", TokenCreatedAt: time.Now().Unix()},
 			req:                newHTTPRequest(t, func(r *http.Request) { r.URL.RawQuery = "token=1234" }),
 			sharePerm:          true,
 			downloadPerm:       true,
 			expectedStatusCode: 401,
 		},
 		"Private share, authentication via password": {
-			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
+			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123", TokenCreatedAt: time.Now().Unix()},
 			req:                newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "password") }),
 			sharePerm:          true,
 			downloadPerm:       true,
 			expectedStatusCode: 200,
 		},
 		"Private share, authentication via invalid password, 401": {
-			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
+			share:              &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123", TokenCreatedAt: time.Now().Unix()},
 			req:                newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "wrong-password") }),
 			sharePerm:          true,
 			downloadPerm:       true,

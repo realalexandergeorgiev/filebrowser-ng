@@ -39,11 +39,7 @@ type ResourceType =
   | "blob"
   | "textImmutable";
 
-type DownloadFormat =
-  | "zip"
-  | "tar"
-  | "targz"
-  | null;
+type DownloadFormat = "zip" | "tar" | "targz" | null;
 
 interface ClipItem {
   from: string;

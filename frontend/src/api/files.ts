@@ -1,4 +1,3 @@
-import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { baseURL } from "@/utils/constants";
 import { upload as postTus, useTus } from "./tus";
@@ -139,7 +138,6 @@ async function postResources(
     bufferContent = await new Response(content).arrayBuffer();
   }
 
-  const authStore = useAuthStore();
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open(
@@ -147,7 +145,7 @@ async function postResources(
       `${baseURL}/api/resources${url}?override=${overwrite}`,
       true
     );
-    request.setRequestHeader("X-Auth", authStore.jwt);
+    // Same-origin XHR carries the HttpOnly session cookie automatically.
 
     if (typeof onupload === "function") {
       request.upload.onprogress = onupload;

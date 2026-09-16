@@ -41,6 +41,10 @@ Keep the v2 binary/image until the new instance is verified.
   (10/min); share creation enforces rules and renames drop shares.
   Directory downloads offer `zip`, `tar`, `targz` only — exotic codecs
   (`tarbz2`, `tarxz`, `tarlz4`, `tarsz`, `tarbr`, `tarzst`) answer 400.
+- **Browser auth is cookie-based**: the access token lives in an
+  `HttpOnly; SameSite=Strict` cookie instead of `localStorage`. API clients
+  using the `X-Auth` header keep working; new `GET /api/auth/me` reports
+  the user plus session expiry.
 - **Docker**: `compose.yaml` builds the local image, mounts
   `/srv`, `/database`, `/config`, and requires `REDIS_PASSWORD`
   (see `.env.example`). The old `filebrowser:/flux/vault` mount served

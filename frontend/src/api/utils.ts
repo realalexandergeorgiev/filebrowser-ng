@@ -1,4 +1,3 @@
-import { useAuthStore } from "@/stores/auth";
 import { renew, logout } from "@/utils/auth";
 import { baseURL } from "@/utils/constants";
 import { encodePath } from "@/utils/url";
@@ -19,8 +18,6 @@ export async function fetchURL(
   opts: ApiOpts,
   auth = true
 ): Promise<Response> {
-  const authStore = useAuthStore();
-
   opts = opts || {};
   opts.headers = opts.headers || {};
 
@@ -28,8 +25,10 @@ export async function fetchURL(
   let res;
   try {
     res = await fetch(`${baseURL}${url}`, {
+      // The session cookie is HttpOnly: the browser sends it, JavaScript
+      // never sees the token. Same-origin keeps CSRF out (no CORS).
+      credentials: "same-origin",
       headers: {
-        "X-Auth": authStore.jwt,
         ...headers,
       },
       ...rest,
@@ -43,7 +42,7 @@ export async function fetchURL(
   }
 
   if (auth && res.headers.get("X-Renew-Token") === "true") {
-    await renew(authStore.jwt);
+    await renew();
   }
 
   if (res.status < 200 || res.status > 299) {

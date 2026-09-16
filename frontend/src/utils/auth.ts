@@ -1,35 +1,43 @@
 import { useAuthStore } from "@/stores/auth";
 import router from "@/router";
-import type { JwtPayload } from "jwt-decode";
-import { jwtDecode } from "jwt-decode";
 import { authMethod, baseURL, noAuth, logoutPage } from "./constants";
 import { StatusError } from "@/api/utils";
 import { setSafeTimeout } from "@/api/utils";
 
-export function parseToken(token: string) {
-  // falsy or malformed jwt will throw InvalidTokenError
-  const data = jwtDecode<JwtPayload & { user: IUser }>(token);
+interface MeResponse {
+  user: IUser;
+  expiresAt: number;
+}
 
-  document.cookie = `auth=${token}; Path=/; SameSite=Strict;`;
+async function fetchMe(): Promise<MeResponse> {
+  const res = await fetch(`${baseURL}/api/auth/me`, {
+    credentials: "same-origin",
+  });
 
-  localStorage.setItem("jwt", token);
-
-  const authStore = useAuthStore();
-  authStore.jwt = token;
-  authStore.setUser(data.user);
-
-  // proxy auth with custom logout subject to unknown external timeout
-  if (logoutPage !== "/login" && authMethod === "proxy") {
-    console.warn("idle timeout disabled with proxy auth and custom logout");
-    return;
+  if (res.status !== 200) {
+    throw new StatusError(
+      (await res.text()) || `${res.status} ${res.statusText}`,
+      res.status
+    );
   }
+
+  return (await res.json()) as MeResponse;
+}
+
+function scheduleExpiry(expiresAt: number) {
+  const authStore = useAuthStore();
 
   if (authStore.logoutTimer) {
     clearTimeout(authStore.logoutTimer);
   }
 
-  const expiresAt = new Date(data.exp! * 1000);
-  const timeout = expiresAt.getTime() - Date.now();
+  // Proxy auth with custom logout subject to unknown external timeout
+  if (logoutPage !== "/login" && authMethod === "proxy") {
+    console.warn("idle timeout disabled with proxy auth and custom logout");
+    return;
+  }
+
+  const timeout = expiresAt * 1000 - Date.now();
   authStore.setLogoutTimer(
     setSafeTimeout(() => {
       logout("inactivity");
@@ -37,13 +45,18 @@ export function parseToken(token: string) {
   );
 }
 
+export async function refreshUser() {
+  const me = await fetchMe();
+  const authStore = useAuthStore();
+  authStore.setUser(me.user);
+  scheduleExpiry(me.expiresAt);
+}
+
 export async function validateLogin() {
   try {
-    if (localStorage.getItem("jwt")) {
-      await renew(<string>localStorage.getItem("jwt"));
-    }
+    await refreshUser();
   } catch (error) {
-    console.warn("Invalid JWT token in storage");
+    console.warn("No active session");
     throw error;
   }
 }
@@ -57,42 +70,40 @@ export async function login(
 
   const res = await fetch(`${baseURL}/api/login`, {
     method: "POST",
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
 
-  const body = await res.text();
-
-  if (res.status === 200) {
-    parseToken(body);
-  } else {
+  if (res.status !== 200) {
+    const body = await res.text();
     throw new StatusError(
       body || `${res.status} ${res.statusText}`,
       res.status
     );
   }
+
+  // The session cookie is HttpOnly: never read the token, just load the user.
+  await refreshUser();
 }
 
-export async function renew(jwt: string) {
+export async function renew() {
   const res = await fetch(`${baseURL}/api/renew`, {
     method: "POST",
-    headers: {
-      "X-Auth": jwt,
-    },
+    credentials: "same-origin",
   });
 
-  const body = await res.text();
-
-  if (res.status === 200) {
-    parseToken(body);
-  } else {
+  if (res.status !== 200) {
+    const body = await res.text();
     throw new StatusError(
       body || `${res.status} ${res.statusText}`,
       res.status
     );
   }
+
+  await refreshUser();
 }
 
 export async function signup(username: string, password: string) {
@@ -116,26 +127,17 @@ export async function signup(username: string, password: string) {
 }
 
 export function logout(reason?: string) {
-  // Revoke the server-side session (best effort): afterwards the token is
-  // refused even though its signature is still valid.
-  const jwt = localStorage.getItem("jwt");
-  if (jwt) {
-    void fetch(`${baseURL}/api/logout`, {
-      method: "DELETE",
-      headers: {
-        "X-Auth": jwt,
-      },
-    }).catch(() => {
-      /* local logout proceeds regardless */
-    });
-  }
-
-  document.cookie = "auth=; Max-Age=0; Path=/; SameSite=Strict;";
+  // Revoke server-side first (best effort); the cookie dies with it.
+  void fetch(`${baseURL}/api/logout`, {
+    method: "DELETE",
+    credentials: "same-origin",
+  }).catch(() => {
+    /* local logout proceeds regardless */
+  });
 
   const authStore = useAuthStore();
   authStore.clearUser();
 
-  localStorage.setItem("jwt", "");
   if (noAuth) {
     window.location.reload();
   } else if (logoutPage !== "/login") {

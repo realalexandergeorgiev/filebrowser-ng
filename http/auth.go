@@ -63,11 +63,11 @@ func (e extractor) ExtractToken(r *http.Request) (string, error) {
 		return token, nil
 	}
 
-	if r.Method == http.MethodGet {
-		cookie, _ := r.Cookie("auth")
-		if cookie != nil && strings.Count(cookie.Value, ".") == 2 {
-			return cookie.Value, nil
-		}
+	// The browser holds the token in an HttpOnly cookie instead of
+	// JavaScript storage, so XSS cannot steal it. SameSite=Strict plus no
+	// CORS keeps cross-site requests from carrying it (see loginHandler).
+	if cookie, _ := r.Cookie("auth"); cookie != nil && strings.Count(cookie.Value, ".") == 2 {
+		return cookie.Value, nil
 	}
 
 	return "", request.ErrNoTokenInRequest
@@ -186,6 +186,36 @@ func withAdmin(fn handleFunc) handleFunc {
 	})
 }
 
+// setAuthCookie stores the access token where JavaScript cannot read it.
+// Secure is set on TLS connections; plain-HTTP instances (loopback, or TLS
+// terminated at a reverse proxy) still work without it.
+func setAuthCookie(w http.ResponseWriter, r *http.Request, token string, maxAge time.Duration) {
+	c := &http.Cookie{
+		Name:     "auth",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(maxAge.Seconds()),
+	}
+	if r.TLS != nil {
+		c.Secure = true
+	}
+	http.SetCookie(w, c)
+}
+
+func clearAuthCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0).UTC(),
+	})
+}
+
 func loginHandler(tokenExpireTime time.Duration) handleFunc {
 	limit := newRateLimiter(maxLoginAttempts, rateLimitWindow)
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -218,14 +248,32 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 	}
 }
 
-// logoutHandler revokes the session backing the request token. Afterwards
-// the token is refused even though its signature is still valid.
-var logoutHandler = withUser(func(_ http.ResponseWriter, _ *http.Request, d *data) (int, error) {
+// logoutHandler revokes the session backing the request token and clears
+// the cookie. Afterwards the token is refused even though its signature is
+// still valid.
+var logoutHandler = withUser(func(w http.ResponseWriter, _ *http.Request, d *data) (int, error) {
 	// Idempotent: logging out twice is not an error.
 	if err := d.store.Sessions.Revoke(d.sessionJTI); err != nil {
 		return http.StatusInternalServerError, err
 	}
+	clearAuthCookie(w)
 	return http.StatusOK, nil
+})
+
+// meHandler reports the logged-in user (without the password hash) plus the
+// session expiry the frontend uses for its idle timer. It is the only user
+// lookup the cookie flow needs after login.
+var meHandler = withUser(func(w http.ResponseWriter, _ *http.Request, d *data) (int, error) {
+	sess, err := d.store.Sessions.Get(d.sessionJTI)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	u := *d.user
+	u.Password = ""
+	return renderJSON(w, nil, map[string]interface{}{
+		"user":      &u,
+		"expiresAt": sess.ExpiresAt,
+	})
 })
 
 type signupBody struct {
@@ -319,7 +367,7 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	})
 }
 
-func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration, jti string) (int, error) {
+func printToken(w http.ResponseWriter, r *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration, jti string) (int, error) {
 	claims := &authToken{
 		User: userInfo{
 			ID:                    user.ID,
@@ -349,6 +397,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 		return http.StatusInternalServerError, err
 	}
 
+	setAuthCookie(w, r, signed, tokenExpirationTime)
 	w.Header().Set("Content-Type", "text/plain")
 	if _, err := w.Write([]byte(signed)); err != nil {
 		return http.StatusInternalServerError, err

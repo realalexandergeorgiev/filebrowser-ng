@@ -5,6 +5,7 @@ package fbhttp
 // sessions. Unknown sessions, logout, password/security changes and user
 // deletion all turn previously valid tokens into 401 immediately.
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -255,5 +256,158 @@ func TestDeleteRevokesSessions(t *testing.T) {
 	}
 	if rec := sessionGet(t, st, token); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("VULNERABLE: deleted-user token usable = %d; want 401", rec.Code)
+	}
+}
+
+func loginRaw(t *testing.T, st *storage.Storage, password string) *httptest.ResponseRecorder {
+	t.Helper()
+	body := fmt.Sprintf(`{"username":"u","password":%q}`, password)
+	req, _ := http.NewRequest(http.MethodPost, "/login", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	handle(loginHandler(time.Hour), "", st, &settings.Server{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("login = %d body=%q, want 200", rec.Code, rec.Body.String())
+	}
+	return rec
+}
+
+func authCookie(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
+	t.Helper()
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == "auth" {
+			return c
+		}
+	}
+	t.Fatalf("no auth cookie in %q", rec.Header().Get("Set-Cookie"))
+	return nil
+}
+
+// Login must set an HttpOnly, SameSite=Strict cookie holding the token, so
+// JavaScript (and XSS) cannot read it while the browser still sends it.
+func TestLoginSetsHttpOnlyCookie(t *testing.T) {
+	st, _ := sessionTestSetup(t)
+	c := authCookie(t, loginRaw(t, st, sessionTestPassword))
+
+	if c.Value == "" || strings.Count(c.Value, ".") != 2 {
+		t.Fatalf("cookie holds no JWT: %q", c.Value)
+	}
+	if !c.HttpOnly {
+		t.Fatalf("VULNERABLE: auth cookie without HttpOnly: %v", c)
+	}
+	if c.SameSite != http.SameSiteStrictMode {
+		t.Fatalf("auth cookie SameSite = %v, want Strict", c.SameSite)
+	}
+	if c.Path != "/" {
+		t.Fatalf("auth cookie Path = %q, want /", c.Path)
+	}
+	if c.MaxAge <= 0 {
+		t.Fatalf("auth cookie MaxAge = %d, want > 0", c.MaxAge)
+	}
+
+	// The cookie value is the token.
+	req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
+	req.Header.Set("X-Auth", c.Value)
+	rec := httptest.NewRecorder()
+	protected := withUser(func(w http.ResponseWriter, _ *http.Request, _ *data) (int, error) {
+		return 0, nil
+	})
+	handle(protected, "", st, &settings.Server{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("cookie value as X-Auth = %d, want 200", rec.Code)
+	}
+}
+
+// The cookie authenticates state-changing methods too (the browser has no
+// other credential once localStorage is gone).
+func TestCookieAuthenticatesPost(t *testing.T) {
+	st, _ := sessionTestSetup(t)
+	c := authCookie(t, loginRaw(t, st, sessionTestPassword))
+
+	req, _ := http.NewRequest(http.MethodDelete, "/logout", http.NoBody)
+	req.AddCookie(c)
+	rec := httptest.NewRecorder()
+	handle(logoutHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("cookie-only logout = %d, want 200", rec.Code)
+	}
+	if rec := sessionGet(t, st, c.Value); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("token usable after cookie logout = %d, want 401", rec.Code)
+	}
+}
+
+// Logout clears the cookie in the browser as well.
+func TestLogoutClearsCookie(t *testing.T) {
+	st, _ := sessionTestSetup(t)
+	token := sessionLogin(t, st, sessionTestPassword)
+
+	req, _ := http.NewRequest(http.MethodDelete, "/logout", http.NoBody)
+	req.Header.Set("X-Auth", token)
+	rec := httptest.NewRecorder()
+	handle(logoutHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("logout = %d, want 200", rec.Code)
+	}
+	c := authCookie(t, rec)
+	if c.Value != "" {
+		t.Fatalf("logout left cookie value %q", c.Value)
+	}
+	if c.MaxAge >= 0 && c.Expires.IsZero() {
+		t.Fatalf("logout cookie not expired: %+v", c)
+	}
+}
+
+// Renew refreshes the cookie alongside the token.
+func TestRenewRefreshesCookie(t *testing.T) {
+	st, _ := sessionTestSetup(t)
+	token := sessionLogin(t, st, sessionTestPassword)
+
+	req, _ := http.NewRequest(http.MethodPost, "/renew", http.NoBody)
+	req.Header.Set("X-Auth", token)
+	rec := httptest.NewRecorder()
+	handle(renewHandler(time.Hour), "", st, &settings.Server{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("renew = %d, want 200", rec.Code)
+	}
+	c := authCookie(t, rec)
+	if !c.HttpOnly || c.Value == "" {
+		t.Fatalf("renew did not refresh HttpOnly cookie: %+v", c)
+	}
+}
+
+// /api/auth/me reports the user (never the password hash) plus the session
+// expiry the frontend idle timer uses.
+func TestMeEndpoint(t *testing.T) {
+	st, _ := sessionTestSetup(t)
+	token := sessionLogin(t, st, sessionTestPassword)
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/auth/me", http.NoBody)
+	req.Header.Set("X-Auth", token)
+	rec := httptest.NewRecorder()
+	handle(meHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("me = %d body=%q, want 200", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		User      map[string]interface{} `json:"user"`
+		ExpiresAt int64                  `json:"expiresAt"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.User["username"] != "u" {
+		t.Fatalf("me user = %v", body.User)
+	}
+	if body.User["password"] != "" {
+		t.Fatalf("VULNERABLE: /me leaks password hash: %v", body.User["password"])
+	}
+	if body.ExpiresAt <= time.Now().Unix() {
+		t.Fatalf("me expiresAt not in the future: %d", body.ExpiresAt)
+	}
+
+	req, _ = http.NewRequest(http.MethodGet, "/api/auth/me", http.NoBody)
+	rec = httptest.NewRecorder()
+	handle(meHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous me = %d, want 401", rec.Code)
 	}
 }

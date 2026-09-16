@@ -51,6 +51,7 @@ func NewHandler(
 	tokenExpirationTime := server.GetTokenExpirationTime(DefaultTokenExpirationTime)
 	mux.Handle("/api/login", monkey(loginHandler(tokenExpirationTime), ""))
 	mux.Handle("/api/logout", requireMethod(monkey(logoutHandler, ""), "DELETE"))
+	mux.Handle("/api/auth/me", requireMethod(monkey(meHandler, ""), "GET"))
 	mux.Handle("/api/signup", monkey(signupHandler(), ""))
 	mux.Handle("/api/renew", monkey(renewHandler(tokenExpirationTime), ""))
 

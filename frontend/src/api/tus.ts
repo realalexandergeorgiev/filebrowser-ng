@@ -1,6 +1,5 @@
 import * as tus from "tus-js-client";
 import { baseURL, tusEndpoint, tusSettings, origin } from "@/utils/constants";
-import { useAuthStore } from "@/stores/auth";
 import { removePrefix } from "@/api/utils";
 
 const RETRY_BASE_DELAY = 1000;
@@ -21,8 +20,6 @@ export async function upload(
   filePath = removePrefix(filePath);
   const resourcePath = `${tusEndpoint}${filePath}?override=${overwrite}`;
 
-  const authStore = useAuthStore();
-
   // Exit early because of typescript, tus content can't be a string
   if (content === "") {
     return false;
@@ -34,9 +31,6 @@ export async function upload(
       retryDelays: computeRetryDelays(tusSettings),
       parallelUploads: 1,
       storeFingerprintForResuming: false,
-      headers: {
-        "X-Auth": authStore.jwt,
-      },
       onShouldRetry: function (err) {
         const status = err.originalResponse
           ? err.originalResponse.getStatus()
