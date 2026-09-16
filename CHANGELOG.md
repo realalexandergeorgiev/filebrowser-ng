@@ -26,6 +26,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * Share hash entropy (`http/share.go`): hashes grow from 6 bytes (48-bit, enumerable) to 16 bytes (128-bit, padding-free base64url). Old links are invalid (full-break fork). Test decodes every minted hash and asserts 16 bytes plus uniqueness.
 * Secrets hygiene (`cmd/`): exports (`config export`, `users export` incl. backups) are written `0600` even over existing files; `config export` redacts the JWT signing key (import already keeps the database key, so nothing is lost) and warns that auther credentials remain; new `config rotate-key` invalidates every token at once. Tests in `cmd/secrets_test.go`.
 * Search nil-FileInfo panic (`search/search.go`, `http/search.go`): walking a scope with a symlink-confined entry invoked the result callback with nil info and panicked on `IsDir`. Walk errors now skip (sub)trees; the handler additionally guards nil. Test panics pre-fix, passes post-fix.
+* Server timeouts (`cmd/root.go`): only `ReadHeaderTimeout` was set (slowloris). Construction moved to `newHTTPServer` with an additional `IdleTimeout`; total read/write timeouts stay off so large transfers survive. Test asserts the values.
 
 ### Removed
 

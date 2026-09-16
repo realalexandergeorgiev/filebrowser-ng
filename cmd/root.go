@@ -249,10 +249,7 @@ user created with the credentials from options "username" and "password".`,
 		defer listener.Close()
 
 		log.Println("Listening on", listener.Addr().String())
-		srv := &http.Server{
-			Handler:           handler,
-			ReadHeaderTimeout: 60 * time.Second,
-		}
+		srv := newHTTPServer(handler)
 
 		go func() {
 			if err := srv.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
@@ -392,6 +389,18 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 	}
 
 	return server, nil
+}
+
+// newHTTPServer builds the serving HTTP server. Total Read/WriteTimeouts
+// are deliberately absent: they would abort legitimate multi-gigabyte
+// uploads and archive downloads. Slowloris is contained by capping header
+// reads and idle keep-alive instead.
+func newHTTPServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: 60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
 }
 
 func setupLog(logMethod string) {
