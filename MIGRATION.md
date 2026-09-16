@@ -34,6 +34,8 @@ Keep the v2 binary/image until the new instance is verified.
   return 403.
 - **New share links look different**: hashes are 128-bit now. Existing
   share links keep working; only newly created ones use the longer format.
+- **Share URL tokens expire**: password-bypass tokens die 24h after last
+  use. Pre-upgrade links ask for the password once, then work as before.
 - **API surface**: `GET /api/command` is gone; `DELETE /api/logout` is new
   (the frontend calls it on logout). Login/signup are rate-limited per IP
   (10/min); share creation enforces rules and renames drop shares.

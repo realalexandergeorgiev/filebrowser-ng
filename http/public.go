@@ -3,16 +3,22 @@ package fbhttp
 import (
 	"crypto/subtle"
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/share"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// maxShareTokenAge bounds a share URL token: older tokens stop working until
+// the share password slides them again, so leaked URLs die on their own.
+const maxShareTokenAge = 24 * time.Hour
 
 var withHashFile = func(fn handleFunc) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -22,7 +28,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		status, err := authenticateShareRequest(w, r, link)
+		status, err := authenticateShareRequest(w, r, d, link)
 		if status != 0 || err != nil {
 			return status, err
 		}
@@ -141,12 +147,19 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 // It is process-wide so parallel handler instances share one budget.
 var sharePasswordLimiter = newRateLimiter(maxSharePasswordAttempts, rateLimitWindow)
 
-func authenticateShareRequest(w http.ResponseWriter, r *http.Request, l *share.Link) (int, error) {
+func authenticateShareRequest(w http.ResponseWriter, r *http.Request, d *data, l *share.Link) (int, error) {
 	if l.PasswordHash == "" {
 		return 0, nil
 	}
 
-	if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("token")), []byte(l.Token)) == 1 {
+	// The URL token spares the password on every file of a share, so it is
+	// the most exposed credential here: it must be set, and it must be
+	// fresh. Stale tokens (logs, history, pre-upgrade links) fall through
+	// to the password instead of working forever.
+	if l.Token != "" && subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("token")), []byte(l.Token)) == 1 {
+		if time.Since(time.Unix(l.TokenCreatedAt, 0)) > maxShareTokenAge {
+			return http.StatusUnauthorized, nil
+		}
 		return 0, nil
 	}
 
@@ -169,6 +182,13 @@ func authenticateShareRequest(w http.ResponseWriter, r *http.Request, l *share.L
 			return http.StatusUnauthorized, nil
 		}
 		return 0, err
+	}
+
+	// A correct password slides the token lifetime: active shares keep
+	// working without re-entry, idle ones age out on their own.
+	l.TokenCreatedAt = time.Now().Unix()
+	if err := d.store.Share.Save(l); err != nil {
+		log.Printf("WARNING: failed to slide share token lifetime: %v", err)
 	}
 
 	return 0, nil

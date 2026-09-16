@@ -223,21 +223,24 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	}
 
 	var token string
+	var tokenCreatedAt int64
 	if len(hash) > 0 {
 		tokenBuffer := make([]byte, 96)
 		if _, err := rand.Read(tokenBuffer); err != nil {
 			return http.StatusInternalServerError, err
 		}
 		token = base64.URLEncoding.EncodeToString(tokenBuffer)
+		tokenCreatedAt = time.Now().Unix()
 	}
 
 	s = &share.Link{
-		Path:         r.URL.Path,
-		Hash:         str,
-		Expire:       expire,
-		UserID:       d.user.ID,
-		PasswordHash: string(hash),
-		Token:        token,
+		Path:           r.URL.Path,
+		Hash:           str,
+		Expire:         expire,
+		UserID:         d.user.ID,
+		PasswordHash:   string(hash),
+		Token:          token,
+		TokenCreatedAt: tokenCreatedAt,
 	}
 
 	if err := d.store.Share.Save(s); err != nil {

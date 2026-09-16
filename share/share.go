@@ -17,4 +17,7 @@ type Link struct {
 	// URL-Safe and is used to download links in password-protected shares via a
 	// query arg.
 	Token string `json:"token,omitempty"`
+	// TokenCreatedAt bounds the token: tokens older than the max age stop
+	// working until the password slides them again. Zero means expired.
+	TokenCreatedAt int64 `json:"tokenCreatedAt"`
 }
