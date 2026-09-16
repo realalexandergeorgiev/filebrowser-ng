@@ -223,7 +223,7 @@ func TestResourcePostCleanupDoesNotDeleteThroughSymlink(t *testing.T) {
 	}
 }
 
-func TestResourcePostRunsUploadHooksForDirectories(t *testing.T) {
+func TestResourcePostCreatesDirectoryWithoutHooks(t *testing.T) {
 	root := t.TempDir()
 	userScope := filepath.Join(root, "user")
 	if err := os.MkdirAll(userScope, 0o755); err != nil {
@@ -233,27 +233,21 @@ func TestResourcePostRunsUploadHooksForDirectories(t *testing.T) {
 	key := []byte("test-signing-key")
 	perm := users.Permissions{Create: true}
 	st := scopedUserStorage(t, userScope, perm, key)
-	if err := st.Settings.Save(&settings.Settings{
-		Key: key,
-		Commands: map[string][]string{
-			"after_upload": {"filebrowser-hook-command-that-does-not-exist"},
-		},
-	}); err != nil {
+	if err := st.Settings.Save(&settings.Settings{Key: key}); err != nil {
 		t.Fatal(err)
 	}
 
 	req, _ := http.NewRequest(http.MethodPost, "/created/", http.NoBody)
 	req.Header.Set("X-Auth", signToken(t, perm, key))
 	rec := httptest.NewRecorder()
-	handle(resourcePostHandler(diskcache.NewNoOp()), "", st, &settings.Server{EnableExec: true}).ServeHTTP(rec, req)
+	handle(resourcePostHandler(diskcache.NewNoOp()), "", st, &settings.Server{}).ServeHTTP(rec, req)
 
-	// A missing after_upload command makes the request fail only if the hook ran.
-	// It avoids a platform-specific helper executable while still exercising the
-	// same path the web UI uses for directory uploads.
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("expected directory upload hook failure to return 500, got %d body=%q", rec.Code, rec.Body.String())
+	// Command execution was removed: directory creation must succeed on its
+	// own instead of failing in a missing hook command.
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected directory creation to return 200, got %d body=%q", rec.Code, rec.Body.String())
 	}
 	if _, err := os.Stat(filepath.Join(userScope, "created")); err != nil {
-		t.Fatalf("expected directory to be created before its after hook, got %v", err)
+		t.Fatalf("expected directory to be created, got %v", err)
 	}
 }

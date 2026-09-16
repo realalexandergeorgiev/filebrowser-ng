@@ -15,10 +15,13 @@ type UserDefaults struct {
 	RedirectAfterCopyMove bool              `json:"redirectAfterCopyMove"`
 	Sorting               files.Sorting     `json:"sorting"`
 	Perm                  users.Permissions `json:"perm"`
-	Commands              []string          `json:"commands"`
-	HideDotfiles          bool              `json:"hideDotfiles"`
-	DateFormat            bool              `json:"dateFormat"`
-	AceEditorTheme        string            `json:"aceEditorTheme"`
+	// Commands is deprecated: command execution was removed, nothing
+	// evaluates this list anymore. Kept for API compatibility until the
+	// frontend stops sending it.
+	Commands       []string `json:"commands"`
+	HideDotfiles   bool     `json:"hideDotfiles"`
+	DateFormat     bool     `json:"dateFormat"`
+	AceEditorTheme string   `json:"aceEditorTheme"`
 }
 
 // Apply applies the default options to a user.

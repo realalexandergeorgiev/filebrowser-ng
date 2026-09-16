@@ -35,7 +35,6 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.Bool("hideLoginButton", false, "hide login button from public pages")
 	flags.Bool("createUserDir", false, "generate user's home directory automatically")
 	flags.Uint("minimumPasswordLength", settings.DefaultMinimumPasswordLength, "minimum password length for new users")
-	flags.String("shell", "", "shell command to which other commands should be appended")
 
 	// NB: these are string so they can be presented as octal in the help text
 	// as that's the conventional representation for modes in Unix.
@@ -205,7 +204,6 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "Logout Page:\t%s\n", set.LogoutPage)
 	fmt.Fprintf(w, "Minimum Password Length:\t%d\n", set.MinimumPasswordLength)
 	fmt.Fprintf(w, "Auth Method:\t%s\n", set.AuthMethod)
-	fmt.Fprintf(w, "Shell:\t%s\t\n", strings.Join(set.Shell, " "))
 
 	fmt.Fprintln(w, "\nBranding:")
 	fmt.Fprintf(w, "\tName:\t%s\n", set.Branding.Name)
@@ -225,7 +223,6 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\tTLS Cert:\t%s\n", ser.TLSCert)
 	fmt.Fprintf(w, "\tTLS Key:\t%s\n", ser.TLSKey)
 	fmt.Fprintf(w, "\tToken Expiration Time:\t%s\n", ser.TokenExpirationTime)
-	fmt.Fprintf(w, "\tExec Enabled:\t%t\n", ser.EnableExec)
 	fmt.Fprintf(w, "\tThumbnails Enabled:\t%t\n", ser.EnableThumbnails)
 	fmt.Fprintf(w, "\tResize Preview:\t%t\n", ser.ResizePreview)
 	fmt.Fprintf(w, "\tType Detection by Header:\t%t\n", ser.TypeDetectionByHeader)
@@ -305,9 +302,6 @@ func getSettings(flags *pflag.FlagSet, set *settings.Settings, ser *settings.Ser
 		case "disablePreviewResize":
 			ser.ResizePreview, err = flags.GetBool(flag.Name)
 			ser.ResizePreview = !ser.ResizePreview
-		case "disableExec":
-			ser.EnableExec, err = flags.GetBool(flag.Name)
-			ser.EnableExec = !ser.EnableExec
 		case "disableTypeDetectionByHeader":
 			ser.TypeDetectionByHeader, err = flags.GetBool(flag.Name)
 			ser.TypeDetectionByHeader = !ser.TypeDetectionByHeader
@@ -326,12 +320,6 @@ func getSettings(flags *pflag.FlagSet, set *settings.Settings, ser *settings.Ser
 			set.CreateUserDir, err = flags.GetBool(flag.Name)
 		case "minimumPasswordLength":
 			set.MinimumPasswordLength, err = flags.GetUint(flag.Name)
-		case "shell":
-			var shell string
-			shell, err = flags.GetString(flag.Name)
-			if err == nil {
-				set.Shell = convertCmdStrToCmdArray(shell)
-			}
 		case "fileMode":
 			set.FileMode, err = getAndParseFileMode(flags, flag.Name)
 		case "dirMode":

@@ -19,6 +19,10 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * TUS path disclosure (`http/tus_handlers.go`): `400` errors embedded `file.RealPath()` (absolute server path) and `handle()` appends `400` errors to the response body. Directory/oﬀset errors no longer include any path; regression test `http/tus_pathleak_test.go` asserts `400` bodies contain no server path.
 * Branding directory traversal (`http/static.go`): overrides did `filepath.Join(Branding.Files, r.URL.Path)` without containment, so `img/../../…` could serve host files. New `brandingFile()` helper rejects escapes with `404`; regression tests `http/static_branding_test.go` (handler-level traversal + helper table).
 
+### Removed
+
+* Command execution, runner, hooks, web shell (`#5199`, `GHSA-jvpw-637p-h3pw`, `CVE-2026-54090`): deleted `runner/`, `http/commands.go` (`GET /api/command`), `cmd cmds*`, `docs/command-execution.md`, `Settings.Shell`/`Settings.Commands`, `Server.EnableExec`, `--disableExec` flag and `config set` shell handling. File operations (`resource.go`, TUS) now run directly without hook wrappers; `settingsPut` no longer persists shell/commands. Per-user `Commands` and `perm.execute` stay as deprecated inert fields until the frontend stops sending them (frontend shell UI auto-disables without the backend flag).
+
 ### Changed
 
 * Fork intent: full rewrite, full break (no v2 DB/config/API compatibility); command execution removal; server-side sessions; single-binary selfhosted; docs in English.

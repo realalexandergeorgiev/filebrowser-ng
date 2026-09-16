@@ -43,7 +43,6 @@ var (
 		"socket-perm":                      "socketPerm",
 		"disable-thumbnails":               "disableThumbnails",
 		"disable-preview-resize":           "disablePreviewResize",
-		"disable-exec":                     "disableExec",
 		"disable-type-detection-by-header": "disableTypeDetectionByHeader",
 		"img-processors":                   "imageProcessors",
 		"cache-dir":                        "cacheDir",
@@ -109,7 +108,6 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.String("tokenExpirationTime", "2h", "user session timeout")
 	flags.Bool("disableThumbnails", false, "disable image thumbnails")
 	flags.Bool("disablePreviewResize", false, "disable resize of image previews")
-	flags.Bool("disableExec", true, "disables Command Runner feature")
 	flags.Bool("disableTypeDetectionByHeader", false, "disables type detection by reading file headers")
 	flags.Bool("disableImageResolutionCalc", false, "disables image resolution calculation by reading image files")
 	flags.Bool("followExternalSymlinks", false, "follow symlinks whose target is outside the user scope (unsafe)")
@@ -356,10 +354,6 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 		server.ImageResolutionCal = !v.GetBool("disableImageResolutionCalc")
 	}
 
-	if v.IsSet("disableExec") {
-		server.EnableExec = !v.GetBool("disableExec")
-	}
-
 	if v.IsSet("followExternalSymlinks") {
 		server.FollowExternalSymlinks = v.GetBool("followExternalSymlinks")
 	}
@@ -371,13 +365,6 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 	// Do not use saved Socket if address was manually set.
 	if isAddrSet && server.Socket != "" {
 		server.Socket = ""
-	}
-
-	if server.EnableExec {
-		log.Println("WARNING: Command Runner feature enabled!")
-		log.Println("WARNING: This feature has known security vulnerabilities and should not")
-		log.Println("WARNING: you fully understand the risks involved. For more information")
-		log.Println("WARNING: read https://github.com/filebrowser/filebrowser/issues/5199")
 	}
 
 	if server.FollowExternalSymlinks {
@@ -453,9 +440,7 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 			ChunkSize:  settings.DefaultTusChunkSize,
 			RetryCount: settings.DefaultTusRetryCount,
 		},
-		Commands: nil,
-		Shell:    nil,
-		Rules:    nil,
+		Rules: nil,
 	}
 
 	var err error
@@ -486,7 +471,6 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 		TokenExpirationTime:    v.GetString("tokenExpirationTime"),
 		EnableThumbnails:       !v.GetBool("disableThumbnails"),
 		ResizePreview:          !v.GetBool("disablePreviewResize"),
-		EnableExec:             !v.GetBool("disableExec"),
 		TypeDetectionByHeader:  !v.GetBool("disableTypeDetectionByHeader"),
 		ImageResolutionCal:     !v.GetBool("disableImageResolutionCalc"),
 		FollowExternalSymlinks: v.GetBool("followExternalSymlinks"),

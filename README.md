@@ -21,12 +21,12 @@ Background: [Goodbye File Browser, for Real This Time](https://hacdias.com/2026/
 
 ## Security status
 
-Current branch: audit complete (`ARCHITEKTUR.md` §3), rewrite not started. Known P0 classes inherited from upstream and scheduled for removal/replacement:
+Current branch: audit complete (`ARCHITEKTUR.md` §3), rewrite underway. Upstream P0 classes and their state here:
 
-- Stateless JWT without revocation (`GO-2025-3812`/`CVE-2025-53826`/`#5216`).
-- Proxy header blind trust (`GO-2026-5966`).
-- Hook-auth priv-esc / pre-auth RCE (`CVE-2026-54088`).
-- Runner/hook/WS RCE class (`#5199`, `GHSA-jvpw-637p-h3pw`, `CVE-2026-54090`).
+- ~~Command execution/runner/hooks (`#5199`)~~ — **removed** (no `runner/`, no web shell, no hooks, no `--disable-exec`).
+- Stateless JWT without revocation (`GO-2025-3812`/`CVE-2025-53826`/`#5216`) — scheduled: server-side sessions next.
+- Proxy header blind trust (`GO-2026-5966`) — scheduled.
+- Hook-auth priv-esc / pre-auth RCE (`CVE-2026-54088`) — scheduled (auth-hook removal).
 
 If you run anything pre-rewrite: do not expose directly, put behind a reverse proxy with TLS + own auth, keep exec disabled (default), run unprivileged in a container with only the served directory mounted.
 

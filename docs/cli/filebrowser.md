@@ -56,7 +56,6 @@ filebrowser [flags]
   -t, --cert string                    tls certificate
   -c, --config string                  config file path
   -d, --database string                database path (default "./filebrowser.db")
-      --disableExec                    disables Command Runner feature (default true)
       --disableImageResolutionCalc     disables image resolution calculation by reading image files
       --disablePreviewResize           disable resize of image previews
       --disableThumbnails              disable image thumbnails
@@ -79,7 +78,6 @@ filebrowser [flags]
 
 ## See Also
 
-* [filebrowser cmds](filebrowser-cmds.md)	 - Command runner management utility
 * [filebrowser completion](filebrowser-completion.md)	 - Generate the autocompletion script for the specified shell
 * [filebrowser config](filebrowser-config.md)	 - Configuration management utility
 * [filebrowser hash](filebrowser-hash.md)	 - Hashes a password
