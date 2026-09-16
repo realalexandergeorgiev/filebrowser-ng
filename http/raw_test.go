@@ -1,8 +1,11 @@
 package fbhttp
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -140,5 +143,134 @@ func TestSetContentDisposition(t *testing.T) {
 				t.Errorf("Content-Type = %q, want application/octet-stream", contentType)
 			}
 		})
+	}
+}
+
+// The stdlib packers must round-trip directory downloads: entries, names
+// and contents survive for every supported format.
+func TestRawArchiveRoundTrip(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(filepath.Join(userScope, "docs", "empty"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(userScope, "docs", "a.txt"), []byte("AAA"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(userScope, "docs", "empty", "b.txt"), []byte("BB"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Download: true}
+	st := scopedUserStorage(t, userScope, perm, key)
+	signed := signToken(t, st, perm, key)
+
+	fetch := func(algo string) (int, []byte) {
+		req, _ := http.NewRequest(http.MethodGet, "/docs?algo="+algo, http.NoBody)
+		req.Header.Set("X-Auth", signed)
+		rec := httptest.NewRecorder()
+		handle(rawHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
+		return rec.Code, rec.Body.Bytes()
+	}
+
+	t.Run("zip", func(t *testing.T) {
+		code, body := fetch("zip")
+		if code != http.StatusOK {
+			t.Fatalf("zip = %d, want 200", code)
+		}
+		zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+		if err != nil {
+			t.Fatalf("unzip: %v", err)
+		}
+		got := map[string]string{}
+		for _, f := range zr.File {
+			if strings.HasSuffix(f.Name, "/") {
+				continue
+			}
+			rc, err := f.Open()
+			if err != nil {
+				t.Fatal(err)
+			}
+			content, err := io.ReadAll(rc)
+			rc.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+			got[f.Name] = string(content)
+		}
+		if got["a.txt"] != "AAA" || got["empty/b.txt"] != "BB" {
+			t.Fatalf("zip entries = %v", got)
+		}
+	})
+
+	for _, algo := range []string{"tar", "targz"} {
+		t.Run(algo, func(t *testing.T) {
+			code, body := fetch(algo)
+			if code != http.StatusOK {
+				t.Fatalf("%s = %d, want 200", algo, code)
+			}
+			raw := body
+			if algo == "targz" {
+				gz, err := gzip.NewReader(bytes.NewReader(body))
+				if err != nil {
+					t.Fatalf("gunzip: %v", err)
+				}
+				raw, err = io.ReadAll(gz)
+				gz.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			tr := tar.NewReader(bytes.NewReader(raw))
+			got := map[string]string{}
+			for {
+				hdr, err := tr.Next()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					t.Fatalf("tar read: %v", err)
+				}
+				if hdr.Typeflag == tar.TypeDir {
+					continue
+				}
+				content, err := io.ReadAll(tr)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got[hdr.Name] = string(content)
+			}
+			if got["a.txt"] != "AAA" || got["empty/b.txt"] != "BB" {
+				t.Fatalf("%s entries = %v", algo, got)
+			}
+		})
+	}
+}
+
+// Removed exotic codecs must fail loudly instead of hitting a missing library.
+func TestRawArchiveRemovedFormatsRejected(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(filepath.Join(userScope, "docs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(userScope, "docs", "a.txt"), []byte("AAA"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Download: true}
+	st := scopedUserStorage(t, userScope, perm, key)
+	signed := signToken(t, st, perm, key)
+
+	for _, algo := range []string{"tarbz2", "tarxz", "tarlz4", "tarsz", "tarbr", "tarzst", "rar"} {
+		req, _ := http.NewRequest(http.MethodGet, "/docs?algo="+algo, http.NoBody)
+		req.Header.Set("X-Auth", signed)
+		rec := httptest.NewRecorder()
+		handle(rawHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("algo=%s = %d, want 400", algo, rec.Code)
+		}
 	}
 }

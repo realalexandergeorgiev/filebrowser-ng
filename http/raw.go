@@ -1,8 +1,12 @@
 package fbhttp
 
 import (
-	"errors"
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
+	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -14,7 +18,6 @@ import (
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/fileutils"
 	"github.com/filebrowser/filebrowser/v2/users"
-	"github.com/mholt/archives"
 )
 
 func parseQueryFiles(r *http.Request, f *files.FileInfo, _ *users.User) ([]string, error) {
@@ -38,28 +41,27 @@ func parseQueryFiles(r *http.Request, f *files.FileInfo, _ *users.User) ([]strin
 	return fileSlice, nil
 }
 
-func parseQueryAlgorithm(r *http.Request) (string, archives.Archival, error) {
+// archiveFormat is a supported download packing. Only stdlib formats are
+// offered: the exotic codecs (bz2, xz, lz4, sz, br, zst) came from an
+// unmaintained dependency and are rejected.
+type archiveFormat string
+
+const (
+	archiveZip   archiveFormat = "zip"
+	archiveTar   archiveFormat = "tar"
+	archiveTarGz archiveFormat = "targz"
+)
+
+func parseQueryAlgorithm(r *http.Request) (string, archiveFormat, error) {
 	switch r.URL.Query().Get("algo") {
 	case "zip", "true", "":
-		return ".zip", archives.Zip{}, nil
+		return ".zip", archiveZip, nil
 	case "tar":
-		return ".tar", archives.Tar{}, nil
+		return ".tar", archiveTar, nil
 	case "targz":
-		return ".tar.gz", archives.CompressedArchive{Compression: archives.Gz{}, Archival: archives.Tar{}}, nil
-	case "tarbz2":
-		return ".tar.bz2", archives.CompressedArchive{Compression: archives.Bz2{}, Archival: archives.Tar{}}, nil
-	case "tarxz":
-		return ".tar.xz", archives.CompressedArchive{Compression: archives.Xz{}, Archival: archives.Tar{}}, nil
-	case "tarlz4":
-		return ".tar.lz4", archives.CompressedArchive{Compression: archives.Lz4{}, Archival: archives.Tar{}}, nil
-	case "tarsz":
-		return ".tar.sz", archives.CompressedArchive{Compression: archives.Sz{}, Archival: archives.Tar{}}, nil
-	case "tarbr":
-		return ".tar.br", archives.CompressedArchive{Compression: archives.Brotli{}, Archival: archives.Tar{}}, nil
-	case "tarzst":
-		return ".tar.zst", archives.CompressedArchive{Compression: archives.Zstd{}, Archival: archives.Tar{}}, nil
+		return ".tar.gz", archiveTarGz, nil
 	default:
-		return "", nil, errors.New("format not implemented")
+		return "", "", fmt.Errorf("unsupported archive format %q: want zip, tar or targz", r.URL.Query().Get("algo"))
 	}
 }
 
@@ -103,7 +105,15 @@ var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) 
 	return rawDirHandler(w, r, d, file)
 })
 
-func getFiles(d *data, path, commonPath string) ([]archives.FileInfo, error) {
+// archiveEntry is one file packed into a download archive. Names are
+// pre-hardened by getFiles and never escape the archive root.
+type archiveEntry struct {
+	info fs.FileInfo
+	name string
+	open func() (fs.File, error)
+}
+
+func getFiles(d *data, path, commonPath string) ([]archiveEntry, error) {
 	if !d.Check(path) {
 		return nil, nil
 	}
@@ -113,7 +123,7 @@ func getFiles(d *data, path, commonPath string) ([]archives.FileInfo, error) {
 		return nil, err
 	}
 
-	var archiveFiles []archives.FileInfo
+	var archiveFiles []archiveEntry
 
 	if path != commonPath {
 		nameInArchive := strings.TrimPrefix(path, commonPath)
@@ -133,10 +143,10 @@ func getFiles(d *data, path, commonPath string) ([]archives.FileInfo, error) {
 			return nil, fmt.Errorf("refusing unsafe archive entry name: %q", nameInArchive)
 		}
 
-		archiveFiles = append(archiveFiles, archives.FileInfo{
-			FileInfo:      info,
-			NameInArchive: nameInArchive,
-			Open: func() (fs.File, error) {
+		archiveFiles = append(archiveFiles, archiveEntry{
+			info: info,
+			name: nameInArchive,
+			open: func() (fs.File, error) {
 				return d.user.Fs.Open(path)
 			},
 		})
@@ -174,14 +184,14 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 		return http.StatusInternalServerError, err
 	}
 
-	extension, archiver, err := parseQueryAlgorithm(r)
+	extension, format, err := parseQueryAlgorithm(r)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusBadRequest, err
 	}
 
 	commonDir := fileutils.CommonPrefix(filepath.Separator, filenames...)
 
-	var allFiles []archives.FileInfo
+	var allFiles []archiveEntry
 	for _, fname := range filenames {
 		archiveFiles, err := getFiles(d, fname, commonDir)
 		if err != nil {
@@ -209,11 +219,104 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	name += extension
 	w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+url.PathEscape(name))
 
-	if err := archiver.Archive(r.Context(), w, allFiles); err != nil {
+	if err := writeArchive(r.Context(), w, format, allFiles); err != nil {
 		return http.StatusInternalServerError, err
 	}
 
 	return 0, nil
+}
+
+// writeArchive packs entries with the standard library. Directories are
+// stored as explicit entries so empty ones survive the round trip.
+func writeArchive(ctx context.Context, w io.Writer, format archiveFormat, files []archiveEntry) error {
+	switch format {
+	case archiveZip:
+		zw := zip.NewWriter(w)
+		defer zw.Close()
+		for _, e := range files {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if err := writeZipEntry(zw, e); err != nil {
+				return err
+			}
+		}
+		return zw.Close()
+	case archiveTarGz:
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		tw := tar.NewWriter(gz)
+		defer tw.Close()
+		for _, e := range files {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if err := writeTarEntry(tw, e); err != nil {
+				return err
+			}
+		}
+		if err := tw.Close(); err != nil {
+			return err
+		}
+		return gz.Close()
+	default:
+		tw := tar.NewWriter(w)
+		defer tw.Close()
+		for _, e := range files {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if err := writeTarEntry(tw, e); err != nil {
+				return err
+			}
+		}
+		return tw.Close()
+	}
+}
+
+func writeZipEntry(zw *zip.Writer, e archiveEntry) error {
+	header, err := zip.FileInfoHeader(e.info)
+	if err != nil {
+		return err
+	}
+	header.Name = e.name
+	if e.info.IsDir() {
+		header.Name += "/"
+		header.Method = zip.Store
+		_, err := zw.CreateHeader(header)
+		return err
+	}
+	header.Method = zip.Deflate
+	out, err := zw.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	return copyEntry(out, e)
+}
+
+func writeTarEntry(tw *tar.Writer, e archiveEntry) error {
+	header, err := tar.FileInfoHeader(e.info, "")
+	if err != nil {
+		return err
+	}
+	header.Name = e.name
+	if err := tw.WriteHeader(header); err != nil {
+		return err
+	}
+	if e.info.IsDir() {
+		return nil
+	}
+	return copyEntry(tw, e)
+}
+
+func copyEntry(w io.Writer, e archiveEntry) error {
+	fd, err := e.open()
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	_, err = io.Copy(w, fd)
+	return err
 }
 
 func rawFileHandler(w http.ResponseWriter, r *http.Request, file *files.FileInfo) (int, error) {

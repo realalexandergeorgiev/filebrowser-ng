@@ -32,11 +32,5 @@ const formats = {
   zip: "zip",
   tar: "tar",
   targz: "tar.gz",
-  tarbz2: "tar.bz2",
-  tarxz: "tar.xz",
-  tarlz4: "tar.lz4",
-  tarsz: "tar.sz",
-  tarbr: "tar.br",
-  tarzst: "tar.zst",
 };
 </script>

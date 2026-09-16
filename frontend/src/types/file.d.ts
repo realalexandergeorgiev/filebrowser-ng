@@ -43,10 +43,6 @@ type DownloadFormat =
   | "zip"
   | "tar"
   | "targz"
-  | "tarbz2"
-  | "tarxz"
-  | "tarlz4"
-  | "tarsz"
   | null;
 
 interface ClipItem {

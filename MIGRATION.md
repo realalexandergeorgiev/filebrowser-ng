@@ -37,6 +37,8 @@ Keep the v2 binary/image until the new instance is verified.
 - **API surface**: `GET /api/command` is gone; `DELETE /api/logout` is new
   (the frontend calls it on logout). Login/signup are rate-limited per IP
   (10/min); share creation enforces rules and renames drop shares.
+  Directory downloads offer `zip`, `tar`, `targz` only — exotic codecs
+  (`tarbz2`, `tarxz`, `tarlz4`, `tarsz`, `tarbr`, `tarzst`) answer 400.
 - **Docker**: `compose.yaml` builds the local image, mounts
   `/srv`, `/database`, `/config`, and requires `REDIS_PASSWORD`
   (see `.env.example`). The old `filebrowser:/flux/vault` mount served
