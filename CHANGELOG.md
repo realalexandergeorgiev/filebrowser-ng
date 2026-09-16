@@ -13,6 +13,7 @@ and `MIGRATION.md` for upgrading from v2.
 * Sessions without storm (`storage/bolt/sessions.go`): first backend migrated from archived storm to raw bbolt on the shared handle. Same bucket/key/JSON layout, so pre-migration rows stay readable and rollbacks work; compat test proves both directions.
 * Settings without storm (`storage/bolt/config.go`, `kv.go`): same pattern for the shared `config` bucket rows; compat test proves both directions. The storm key/value helpers are gone.
 * Shares without storm (`storage/bolt/share.go`): same pattern for the `Link` bucket (scan-and-filter replaces index queries at this scale); existing prefix-delete tests now run against the raw backend, plus a storm compat test.
+* Users without storm (`storage/bolt/users.go`): same pattern for the `User` bucket (big-endian ID keys, scans replace lookups, max+1 IDs, unique usernames). Index sub-buckets and the ID counter are rebuilt on writes (as in sessions/shares), so rolled-back binaries keep working; compat test proves both directions including ID continuation.
 * Auth without storm (`storage/bolt/auth.go`): same pattern for the `config`/`auther` key/value row shared with settings; compat test proves both directions.
 * Supply chain (`Dockerfile`): `JSON.sh` is fetched commit-pinned but was never integrity-checked. Added `sha256sum -c` so a compromised host fails the build; verified with a fetcher-stage build.
 

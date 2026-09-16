@@ -129,7 +129,10 @@ func (s shareBackend) Save(l *share.Link) error {
 		if err != nil {
 			return err
 		}
-		return b.Put([]byte(l.Hash), raw)
+		if err := b.Put([]byte(l.Hash), raw); err != nil {
+			return err
+		}
+		return reindexShares(b)
 	})
 }
 
@@ -139,7 +142,10 @@ func (s shareBackend) Delete(hash string) error {
 		if b == nil {
 			return nil
 		}
-		return b.Delete([]byte(hash))
+		if err := b.Delete([]byte(hash)); err != nil {
+			return err
+		}
+		return reindexShares(b)
 	})
 }
 
@@ -165,6 +171,38 @@ func (s shareBackend) DeleteWithPathPrefix(pathPrefix string, userID uint) error
 		}
 
 		if err := s.Delete(link.Hash); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// reindexShares rebuilds storm's index sub-buckets from the rows, so a
+// rolled-back binary keeps finding post-migration links through indexed
+// queries. Formats observed from storm writes: Hash index maps
+// hash+"__"+hash -> hash, Path index maps path+"__"+hash -> hash.
+func reindexShares(b *boltapi.Bucket) error {
+	hashIdx, err := resetIndex(b, "__storm_index_Hash")
+	if err != nil {
+		return err
+	}
+	pathIdx, err := resetIndex(b, "__storm_index_Path")
+	if err != nil {
+		return err
+	}
+	c := b.Cursor()
+	for k, v := c.First(); k != nil; k, v = c.Next() {
+		if v == nil {
+			continue
+		}
+		var l share.Link
+		if err := json.Unmarshal(v, &l); err != nil {
+			return err
+		}
+		if err := hashIdx.Put([]byte(l.Hash+"__"+l.Hash), []byte(l.Hash)); err != nil {
+			return err
+		}
+		if err := pathIdx.Put([]byte(l.Path+"__"+l.Hash), []byte(l.Hash)); err != nil {
 			return err
 		}
 	}
