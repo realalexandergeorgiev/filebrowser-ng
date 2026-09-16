@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,15 +15,14 @@ import (
 	"github.com/spf13/afero"
 )
 
+// lockStripes bounds the locking memory: one entry per cache key would grow
+// forever, while a fixed stripe set keeps same-key access serialized.
+const lockStripes = 64
+
 type FileCache struct {
 	fs afero.Fs
 
-	// granular locks
-	scopedLocks struct {
-		sync.Mutex
-		sync.Once
-		locks map[string]sync.Locker
-	}
+	stripes [lockStripes]sync.RWMutex
 }
 
 func New(fs afero.Fs, root string) *FileCache {
@@ -32,9 +32,9 @@ func New(fs afero.Fs, root string) *FileCache {
 }
 
 func (f *FileCache) Store(_ context.Context, key string, value []byte) error {
-	mu := f.getScopedLocks(key)
-	mu.Lock()
-	defer mu.Unlock()
+	stripe := f.stripe(key)
+	stripe.Lock()
+	defer stripe.Unlock()
 
 	fileName := f.getFileName(key)
 	if err := f.fs.MkdirAll(filepath.Dir(fileName), 0700); err != nil {
@@ -49,6 +49,12 @@ func (f *FileCache) Store(_ context.Context, key string, value []byte) error {
 }
 
 func (f *FileCache) Load(_ context.Context, key string) (value []byte, exist bool, err error) {
+	// Read-locked against concurrent stores of the same stripe so a load
+	// never observes a half-written entry.
+	stripe := f.stripe(key)
+	stripe.RLock()
+	defer stripe.RUnlock()
+
 	r, ok, err := f.open(key)
 	if err != nil || !ok {
 		return nil, ok, err
@@ -63,9 +69,9 @@ func (f *FileCache) Load(_ context.Context, key string) (value []byte, exist boo
 }
 
 func (f *FileCache) Delete(_ context.Context, key string) error {
-	mu := f.getScopedLocks(key)
-	mu.Lock()
-	defer mu.Unlock()
+	stripe := f.stripe(key)
+	stripe.Lock()
+	defer stripe.Unlock()
 
 	fileName := f.getFileName(key)
 	if err := f.fs.Remove(fileName); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -87,19 +93,12 @@ func (f *FileCache) open(key string) (afero.File, bool, error) {
 	return file, true, nil
 }
 
-// getScopedLocks pull lock from the map if found or create a new one
-func (f *FileCache) getScopedLocks(key string) (lock sync.Locker) {
-	f.scopedLocks.Do(func() { f.scopedLocks.locks = map[string]sync.Locker{} })
-
-	f.scopedLocks.Lock()
-	lock, ok := f.scopedLocks.locks[key]
-	if !ok {
-		lock = &sync.Mutex{}
-		f.scopedLocks.locks[key] = lock
-	}
-	f.scopedLocks.Unlock()
-
-	return lock
+// stripe maps a key onto a fixed lock set, so lock memory stays constant
+// no matter how many keys pass through the cache.
+func (f *FileCache) stripe(key string) *sync.RWMutex {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(key))
+	return &f.stripes[h.Sum32()%lockStripes]
 }
 
 func (f *FileCache) getFileName(key string) string {

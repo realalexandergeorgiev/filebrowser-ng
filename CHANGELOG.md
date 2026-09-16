@@ -28,6 +28,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * Search nil-FileInfo panic (`search/search.go`, `http/search.go`): walking a scope with a symlink-confined entry invoked the result callback with nil info and panicked on `IsDir`. Walk errors now skip (sub)trees; the handler additionally guards nil. Test panics pre-fix, passes post-fix.
 * Server timeouts (`cmd/root.go`): only `ReadHeaderTimeout` was set (slowloris). Construction moved to `newHTTPServer` with an additional `IdleTimeout`; total read/write timeouts stay off so large transfers survive. Test asserts the values.
 * Preview request scope (`http/preview.go`): resize ran on `context.Background`, so client aborts kept burning CPU. Resize is bound to the request context (cache write stays detached by design). Test fails pre-fix, passes post-fix.
+* Disk cache locks (`diskcache/file_cache.go`): per-key mutexes accumulated forever in a map, and loads raced stores. Fixed 64-entry striped `RWMutex` set (constant memory, read-locked loads). Concurrency tests run under `-race`.
 
 ### Removed
 
