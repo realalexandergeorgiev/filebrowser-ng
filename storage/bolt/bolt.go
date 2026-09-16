@@ -17,7 +17,7 @@ func NewStorage(db *storm.DB) (*storage.Storage, error) {
 	shareStore := share.NewStorage(shareBackend{db: db})
 	settingsStore := settings.NewStorage(settingsBackend{db: db})
 	authStore := auth.NewStorage(authBackend{db: db}, userStore)
-	sessionStore := sessions.NewStorage(sessionBackend{db: db})
+	sessionStore := sessions.NewStorage(sessionBackend{db: db.Bolt})
 
 	err := save(db, "version", 2)
 	if err != nil {

@@ -10,6 +10,7 @@ and `MIGRATION.md` for upgrading from v2.
 
 * Subtitle conversion cap (`http/subtitle.go`): `.srt` buffered the whole file unbounded. Files over 5 MiB are rejected with 413 (size pre-check plus capped read); test asserts the rejection.
 * Share password guessing budget (`http/public.go`, `http/ratelimit.go`): anyone holding a link hash could try passwords without limit. Guesses are budgeted per peer and link (30/min, `429` + `Retry-After`); token bypass and unprotected links unaffected. Test guesses to 429.
+* Sessions without storm (`storage/bolt/sessions.go`): first backend migrated from archived storm to raw bbolt on the shared handle. Same bucket/key/JSON layout, so pre-migration rows stay readable and rollbacks work; compat test proves both directions.
 * Supply chain (`Dockerfile`): `JSON.sh` is fetched commit-pinned but was never integrity-checked. Added `sha256sum -c` so a compromised host fails the build; verified with a fetcher-stage build.
 
 ## [0.1.0-ng] - 2026-09-16
