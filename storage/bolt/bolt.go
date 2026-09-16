@@ -3,12 +3,12 @@ package bolt
 import (
 	boltapi "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/sessions"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/share"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/auth"
+	"github.com/realalexandergeorgiev/filebrowser-ng/sessions"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // NewStorage creates a storage.Storage based on Bolt DB.

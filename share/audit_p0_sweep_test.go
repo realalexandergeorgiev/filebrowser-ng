@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
 )
 
 type auditStubBackend struct {

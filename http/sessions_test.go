@@ -15,10 +15,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fbAuth "github.com/realalexandergeorgiev/filebrowser-ng/auth"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 const (

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/share"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 	"golang.org/x/crypto/bcrypt"
 )
 

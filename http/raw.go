@@ -15,9 +15,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/fileutils"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/files"
+	"github.com/realalexandergeorgiev/filebrowser-ng/fileutils"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 func parseQueryFiles(r *http.Request, f *files.FileInfo, _ *users.User) ([]string, error) {

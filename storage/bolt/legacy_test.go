@@ -11,9 +11,9 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/auth"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 func openLegacy(t *testing.T) (*storage.Storage, *boltapi.DB) {

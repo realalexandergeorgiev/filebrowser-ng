@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/filebrowser/filebrowser/v2/diskcache"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/diskcache"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // Regression for GHSA-77x8-73f4-5485: copy, rename and delete authorize only

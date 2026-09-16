@@ -7,8 +7,8 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // GetByScope must match case-insensitively: on a case-insensitive filesystem

@@ -1,9 +1,9 @@
 package settings
 
 import (
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/rules"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	"github.com/realalexandergeorgiev/filebrowser-ng/rules"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // StorageBackend is a settings storage backend.

@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	libErrors "github.com/filebrowser/filebrowser/v2/errors"
-	imgErrors "github.com/filebrowser/filebrowser/v2/img"
+	libErrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	imgErrors "github.com/realalexandergeorgiev/filebrowser-ng/img"
 )
 
 // slashClean canonicalizes a virtual path to the absolute, "/"-separated,

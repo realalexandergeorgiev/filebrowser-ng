@@ -15,9 +15,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/files"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // Regression for the archive backslash-to-slash zip-slip (GHSA-83xp-526h-j3ww):

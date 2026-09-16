@@ -9,8 +9,8 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // userBucket matches the storm bucket name for users.User, so rows written

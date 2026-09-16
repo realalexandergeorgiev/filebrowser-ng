@@ -5,9 +5,9 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/auth"
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/auth"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
 )
 
 // configBucket and the "auther" key match the storm key/value layout, so

@@ -11,7 +11,7 @@ You can customize filebrowser-ng to use your own branding. This includes the fol
 - **Disable Used Percentage**: disables the disk usage information on the sidebar.
 - **Branding Folder**: directory which can contain two items:
   - `custom.css`, containing a global stylesheet to apply to all users.
-  - `img`, a directory which can replace all the [default logotypes](https://github.com/filebrowser/filebrowser/tree/master/frontend/public/img) from the application.
+  - `img`, a directory which can replace all the [default logotypes](https://github.com/realalexandergeorgiev/filebrowser-ng/tree/main/frontend/public/img) from the application.
 
 This can be configured by the administrator user, under **Settings → Global Settings**. You can also update the configuration directly using the [CLI](cli/filebrowser-config-set.md):
 
@@ -27,7 +27,7 @@ filebrowser config set --branding.name "My Name" \
 
 ### Custom Icons
 
-To replace the default logotype and favicons, you need to create an `img` directory under the branding directory. The structure of this directory must mimic the one from the [default logotypes](https://github.com/filebrowser/filebrowser/tree/master/frontend/public/img):
+To replace the default logotype and favicons, you need to create an `img` directory under the branding directory. The structure of this directory must mimic the one from the [default logotypes](https://github.com/realalexandergeorgiev/filebrowser-ng/tree/main/frontend/public/img):
 
 ```
 img/

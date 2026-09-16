@@ -12,11 +12,11 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/diskcache"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fbAuth "github.com/realalexandergeorgiev/filebrowser-ng/auth"
+	"github.com/realalexandergeorgiev/filebrowser-ng/diskcache"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage/bolt"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 func routingTestHandler(t *testing.T) http.Handler {

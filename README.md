@@ -46,11 +46,10 @@ Docker / compose files are being reworked for non-root + `0700` + no hardcoded s
 
 ## Roadmap
 
-1. Bootstrap docs + tooling (`ARCHITEKTUR.md`, `govulncheck`/`pnpm audit`, `-trimpath`) — this commit.
-2. Failing-first exploit PoCs (session replay/refresh reuse, proxy forgery, symlink escape, share sweep, WS bypass).
-3. Rewrite core: sessions, proxy/hook removal, ScopedFS, share, TUS, headers/secrets.
-4. Deps swap (`gorilla/*`, `storm`, `archives`, `go-shlex`), strict CSP/cookies/rate-limits, fuzz+e2e.
-5. `v0.1.0-ng` tag. No new features before that.
+Open work is tracked in [`TODO.md`](TODO.md) (AI-oriented backlog). Milestones so far:
+
+1. `v0.1.0-ng`: audit, docs, tooling, failing-first PoCs, P0 classes fixed (exec removal, hook auth, server-side sessions, proxy trust).
+2. `v0.2.0-ng`: HttpOnly cookies, share/TOCTOU/TUS/header/secrets hardening, deps swap, rebrand, module path rename, release binaries.
 
 Each fix = one commit (Conventional Commits), `CHANGELOG.md` updated per commit.
 

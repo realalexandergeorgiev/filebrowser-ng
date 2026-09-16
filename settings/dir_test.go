@@ -3,7 +3,7 @@ package settings
 import (
 	"testing"
 
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // A user provisioned with CreateUserDir must receive a per-user home directory

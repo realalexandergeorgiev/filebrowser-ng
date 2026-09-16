@@ -7,11 +7,9 @@
 > HttpOnly cookies, proxy peer trust, share sweep/acl/entropy/token-lifetime
 > fixed), plus TUS, headers, rate limits, secrets, search, timeouts,
 > preview, diskcache, recaptcha, compose, subtitle, stdlib router, storm
-> removal, archives removal, TOCTOU descriptor verification. Remaining:
-> share `?token=` ergonomics, TOCTOU metadata ops, fuzzing.
-> Module path rename (`github.com/filebrowser/filebrowser/v2` →
-> `github.com/filebrowser-ng/...`) is deferred to the full rewrite to keep
-> the baseline buildable.
+> removal, archives removal, TOCTOU descriptor verification.
+> Module path is `github.com/realalexandergeorgiev/filebrowser-ng`.
+> Remaining work is tracked in `TODO.md`.
 
 ## 1. Goals / Non-Goals
 

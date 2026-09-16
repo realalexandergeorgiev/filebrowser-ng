@@ -8,8 +8,8 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage/bolt"
 )
 
 func TestMarshalCreatesPrivateFile(t *testing.T) {

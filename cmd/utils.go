@@ -17,9 +17,9 @@ import (
 	boltapi "go.etcd.io/bbolt"
 	yaml "gopkg.in/yaml.v3"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage/bolt"
 )
 
 const databasePermissions = 0640

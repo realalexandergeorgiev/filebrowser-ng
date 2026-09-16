@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	boltapi "go.etcd.io/bbolt"
 	"github.com/golang-jwt/jwt/v5"
+	boltapi "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/diskcache"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/share"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/diskcache"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage/bolt"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 func TestAdminShareGetsHandlerMatchesOwnerScope(t *testing.T) {
@@ -214,6 +214,7 @@ func TestShareHashEntropy(t *testing.T) {
 		seen[hash] = struct{}{}
 	}
 }
+
 // would oracle-expose the denial even though access is refused later.
 func TestSharePostDeniedPathForbidden(t *testing.T) {
 	root := t.TempDir()

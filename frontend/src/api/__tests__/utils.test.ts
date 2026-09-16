@@ -47,7 +47,10 @@ describe("fetchURL session transport", () => {
   });
 
   it("logs out on 401", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => response(401)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => response(401))
+    );
 
     await expect(fetchURL("/api/resources/", {})).rejects.toMatchObject({
       status: 401,

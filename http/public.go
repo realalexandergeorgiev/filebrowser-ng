@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/share"
+	"github.com/realalexandergeorgiev/filebrowser-ng/files"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -7,8 +7,8 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/share"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
 )
 
 // shareBucket matches the storm bucket name for share.Link, so rows written

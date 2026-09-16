@@ -5,7 +5,7 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
 )
 
 // kvGet/kvPut are the raw replacements for the storm key/value helpers:

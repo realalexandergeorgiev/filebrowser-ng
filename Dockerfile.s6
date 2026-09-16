@@ -8,12 +8,12 @@ RUN mkdir -p /config /database /srv && \
   chown -R abc:abc /config /database /srv
 
 # Copy files and set permissions
-COPY filebrowser /bin/filebrowser
+COPY filebrowser-ng /bin/filebrowser-ng
 COPY docker/common/ /
 COPY docker/s6/ /
 
-RUN chown -R abc:abc /bin/filebrowser /defaults healthcheck.sh && \
-  setcap 'cap_net_bind_service=+ep' /bin/filebrowser
+RUN chown -R abc:abc /bin/filebrowser-ng /defaults healthcheck.sh && \
+  setcap 'cap_net_bind_service=+ep' /bin/filebrowser-ng
 
 # Define healthcheck script
 HEALTHCHECK --start-period=2s --interval=5s --timeout=3s CMD /healthcheck.sh

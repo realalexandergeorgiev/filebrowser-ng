@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/share"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 func TestSharePasswordRateLimited(t *testing.T) {

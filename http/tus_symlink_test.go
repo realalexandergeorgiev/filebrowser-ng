@@ -12,10 +12,10 @@ import (
 	"github.com/spf13/afero"
 	boltapi "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/files"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage/bolt"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // Reproduces the TUS write vector of GHSA-v9g6-9pp4-3w22: a scoped user must

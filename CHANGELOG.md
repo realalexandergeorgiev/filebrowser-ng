@@ -6,6 +6,12 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+### Changed
+
+* Module path renamed to `github.com/realalexandergeorgiev/filebrowser-ng` (was `github.com/filebrowser/filebrowser/v2`); all imports, `go.mod`, build flags, CLI docs and repo links updated. Fork now lives at `github.com/realalexandergeorgiev/filebrowser-ng`.
+* Rebranded to `filebrowser-ng`: banner/branding, CLI name and help text, frontend title/manifest/links, `LICENSE` copyright. Version default bumped to `0.2.0-ng`.
+* Added `TODO.md` (AI-oriented backlog) and regenerated `docs/cli/*` for the new command name.
+
 ### Fixed
 
 * Subtitle conversion cap (`http/subtitle.go`): `.srt` buffered the whole file unbounded. Files over 5 MiB are rejected with 413 (size pre-check plus capped read); test asserts the rejection.

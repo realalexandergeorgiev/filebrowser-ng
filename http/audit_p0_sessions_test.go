@@ -13,8 +13,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 func TestRevokedSessionTokenRejected(t *testing.T) {

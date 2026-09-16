@@ -6,8 +6,8 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/sessions"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
+	"github.com/realalexandergeorgiev/filebrowser-ng/sessions"
 )
 
 // sessionBucket matches the storm bucket name for sessions.Session, so rows

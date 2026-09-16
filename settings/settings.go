@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/rules"
+	"github.com/realalexandergeorgiev/filebrowser-ng/rules"
 )
 
 const DefaultUsersHomeBasePath = "/users"

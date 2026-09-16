@@ -7,7 +7,7 @@ import (
 
 	boltapi "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/share"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
 )
 
 func newTestShareBackend(t *testing.T) shareBackend {
@@ -96,7 +96,7 @@ func TestDeleteWithPathPrefixTrailingSlash(t *testing.T) {
 		{Hash: "u1-a", Path: "/a", UserID: 1},
 		{Hash: "u1-a-child", Path: "/a/child.txt", UserID: 1},
 		{Hash: "u1-abc", Path: "/abc", UserID: 1}, // sibling sharing a byte prefix
-		{Hash: "u2-a", Path: "/a", UserID: 2},      // other user, must remain
+		{Hash: "u2-a", Path: "/a", UserID: 2},     // other user, must remain
 	}
 	for _, l := range links {
 		if err := s.Save(l); err != nil {

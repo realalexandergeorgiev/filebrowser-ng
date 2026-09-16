@@ -18,7 +18,7 @@ import (
 	"errors"
 	"time"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
 )
 
 // MaxLifetime bounds the sliding session lifetime from creation, no matter

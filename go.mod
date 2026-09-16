@@ -1,4 +1,4 @@
-module github.com/filebrowser/filebrowser/v2
+module github.com/realalexandergeorgiev/filebrowser-ng
 
 go 1.26.0
 

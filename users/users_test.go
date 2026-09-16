@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/filebrowser/filebrowser/v2/files"
+	"github.com/realalexandergeorgiev/filebrowser-ng/files"
 	"github.com/spf13/afero"
 )
 

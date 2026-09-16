@@ -4,7 +4,7 @@ Guidance for Claude when working in this repository (File Browser, `filebrowser/
 
 ## Repo orientation
 
-- Go backend (`github.com/filebrowser/filebrowser/v2`, ecosystem `go`) + Vue frontend under `frontend/`.
+- Go backend (`github.com/realalexandergeorgiev/filebrowser-ng`, ecosystem `go`) + Vue frontend under `frontend/`.
 - The project is in **maintenance-only mode** (see `SECURITY.md`). Prefer small, surgical, well-tested changes.
 - Version scheme: `v2.63.x`. Conventional-commit messages (`fix(scope): …`, `feat: …`, `chore: …`).
 - Verify with `go build ./...`, `go vet ./...`, `go test ./...`. Reuse existing test harnesses (e.g. `signToken`, `scopedUserStorage`, `handle`, `customFSUser`, `mockUserStore`).
@@ -127,7 +127,7 @@ jq -Rs '{description: .}' desc.md \
 
 ## 8. Set affected & patched versions
 
-The package is always `{ecosystem: "go", name: "github.com/filebrowser/filebrowser/v2"}`.
+The package is always `{ecosystem: "go", name: "github.com/realalexandergeorgiev/filebrowser-ng"}`.
 
 - `vulnerable_version_range` — `<= <latest released version>` (the newest tag; find it with
   `git tag --list 'v2.*' --sort=-version:refname | head -1`).
@@ -137,7 +137,7 @@ The package is always `{ecosystem: "go", name: "github.com/filebrowser/filebrows
 Replace the placeholder versions below before sending:
 
 ```bash
-printf '%s' '{"vulnerabilities":[{"package":{"ecosystem":"go","name":"github.com/filebrowser/filebrowser/v2"},"vulnerable_version_range":"<= <latest>","patched_versions":"<next>","vulnerable_functions":[]}]}' \
+printf '%s' '{"vulnerabilities":[{"package":{"ecosystem":"go","name":"github.com/realalexandergeorgiev/filebrowser-ng"},"vulnerable_version_range":"<= <latest>","patched_versions":"<next>","vulnerable_functions":[]}]}' \
   | gh api -X PATCH .../security-advisories/GHSA-xxxx-xxxx-xxxx --input -
 ```
 

@@ -4,7 +4,7 @@ filebrowser-ng is a single binary and can be used as standalone executable. Howe
 
 ## Binary
 
-The quickest and easiest way to install filebrowser-ng is to use a package manager, or our download script, which automatically fetches the latest version of filebrowser-ng for your platform. Alternatively, you can manually download the binary from the [releases page](https://github.com/filebrowser/filebrowser/releases).
+The quickest and easiest way to install filebrowser-ng is to use a package manager, or our download script, which automatically fetches the latest version of filebrowser-ng for your platform. Alternatively, you can manually download the binary from the [releases page](https://github.com/realalexandergeorgiev/filebrowser-ng/releases).
 
 ### Brew
 

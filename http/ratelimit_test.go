@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
 )
 
 func TestRateLimiterBudgetAndWindow(t *testing.T) {

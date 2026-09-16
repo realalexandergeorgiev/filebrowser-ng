@@ -11,10 +11,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	boltapi "go.etcd.io/bbolt"
 
-	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fbAuth "github.com/realalexandergeorgiev/filebrowser-ng/auth"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage/bolt"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 )
 
 // Regression for the username-normalization home-directory collision

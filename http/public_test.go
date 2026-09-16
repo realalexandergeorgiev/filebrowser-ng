@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/rules"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/share"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/realalexandergeorgiev/filebrowser-ng/files"
+	"github.com/realalexandergeorgiev/filebrowser-ng/rules"
+	"github.com/realalexandergeorgiev/filebrowser-ng/settings"
+	"github.com/realalexandergeorgiev/filebrowser-ng/share"
+	"github.com/realalexandergeorgiev/filebrowser-ng/storage/bolt"
+	"github.com/realalexandergeorgiev/filebrowser-ng/users"
 	"github.com/spf13/afero"
 	boltapi "go.etcd.io/bbolt"
 )
