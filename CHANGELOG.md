@@ -27,6 +27,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * Secrets hygiene (`cmd/`): exports (`config export`, `users export` incl. backups) are written `0600` even over existing files; `config export` redacts the JWT signing key (import already keeps the database key, so nothing is lost) and warns that auther credentials remain; new `config rotate-key` invalidates every token at once. Tests in `cmd/secrets_test.go`.
 * Search nil-FileInfo panic (`search/search.go`, `http/search.go`): walking a scope with a symlink-confined entry invoked the result callback with nil info and panicked on `IsDir`. Walk errors now skip (sub)trees; the handler additionally guards nil. Test panics pre-fix, passes post-fix.
 * Server timeouts (`cmd/root.go`): only `ReadHeaderTimeout` was set (slowloris). Construction moved to `newHTTPServer` with an additional `IdleTimeout`; total read/write timeouts stay off so large transfers survive. Test asserts the values.
+* Preview request scope (`http/preview.go`): resize ran on `context.Background`, so client aborts kept burning CPU. Resize is bound to the request context (cache write stays detached by design). Test fails pre-fix, passes post-fix.
 
 ### Removed
 
