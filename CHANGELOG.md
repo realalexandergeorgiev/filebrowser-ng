@@ -1,9 +1,12 @@
 # Changelog — filebrowser-ng
 
 All notable changes to this fork are documented here (newest first, Keep-a-Changelog style).
-Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
+Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design
+and `MIGRATION.md` for upgrading from v2.
 
-## [Unreleased] (filebrowser-ng bootstrap)
+## [Unreleased]
+
+## [0.1.0-ng] - 2026-09-16
 
 ### Added
 

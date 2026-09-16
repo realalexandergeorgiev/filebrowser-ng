@@ -2,12 +2,16 @@
 
 > Fork of `filebrowser/filebrowser` (archived 2026-09-01, last release `v2.63.23`).
 > Goal: security-hardened, maintainable rewrite. Docs language: English.
-> Status: audit complete; fixes landing per commit (see `CHANGELOG.md`):
+> Status: `v0.1.0-ng` (see `CHANGELOG.md`):
 > exec/runner/hooks/web shell removed (backend + frontend UI), hook auth
-> removed, share sweep fixed, TUS path disclosure fixed, branding traversal
-> fixed, server-side sessions done. Module path rename
-> (`github.com/filebrowser/filebrowser/v2` →
-> `github.com/filebrowser-ng/...`) is deferred to the rewrite start to keep
+> removed, proxy auth gated on trusted peers, server-side sessions done,
+> share sweep/acl/entropy fixed, TUS disclosure/truncation/offset/delete
+> fixed, branding traversal fixed, headers/rate-limits/search/timeouts/
+> preview/diskcache/recaptcha/compose hardened, router and homedir deps
+> dropped, `x/*` bumped (`govulncheck` clean). Remaining: storm/bbolt and
+> archives replacement, share password throttling, TOCTOU redesign.
+> Module path rename (`github.com/filebrowser/filebrowser/v2` →
+> `github.com/filebrowser-ng/...`) is deferred to the full rewrite to keep
 > the baseline buildable.
 
 ## 1. Goals / Non-Goals
