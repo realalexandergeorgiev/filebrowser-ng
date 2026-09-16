@@ -60,3 +60,33 @@ func TestSubtitleFileHandlerConvertsSRTBreakTags(t *testing.T) {
 		t.Fatalf("WebVTT output = %q, want converted SRT <br> tags as line breaks", body)
 	}
 }
+
+func TestSubtitleFileHandlerRejectsOversized(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	const path = "/big.srt"
+	if err := afero.WriteFile(fs, path, []byte("tiny"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	info, err := fs.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	file := &files.FileInfo{
+		Fs:      fs,
+		Path:    path,
+		Name:    "big.srt",
+		ModTime: info.ModTime(),
+		Size:    maxSubtitleBytes + 1,
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/subtitle/big.srt?inline=true", http.NoBody)
+	rec := httptest.NewRecorder()
+
+	status, err := subtitleFileHandler(rec, req, file)
+	if err != nil {
+		t.Fatalf("subtitleFileHandler returned error: %v", err)
+	}
+	if status != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized subtitle status = %d, want 413", status)
+	}
+}

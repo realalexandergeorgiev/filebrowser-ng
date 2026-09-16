@@ -14,6 +14,10 @@ import (
 
 var srtLineBreakTag = regexp.MustCompile(`(?i)<br(?:\s+[^>]*)?\s*/?>`)
 
+// maxSubtitleBytes caps subtitle conversion input (5 MiB is far beyond any
+// legitimate subtitle and bounds the parse buffers).
+const maxSubtitleBytes = 5 << 20
+
 var subtitleHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	if !d.user.Perm.Download {
 		return http.StatusAccepted, nil
@@ -44,6 +48,12 @@ func subtitleFileHandler(w http.ResponseWriter, r *http.Request, file *files.Fil
 		return http.StatusBadRequest, nil
 	}
 
+	// Subtitle conversion buffers the whole file: refuse absurd sizes
+	// before allocating anything.
+	if file.Size > maxSubtitleBytes {
+		return http.StatusRequestEntityTooLarge, nil
+	}
+
 	fd, err := file.Fs.Open(file.Path)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -53,9 +63,13 @@ func subtitleFileHandler(w http.ResponseWriter, r *http.Request, file *files.Fil
 	// load subtitle for conversion to vtt
 	var sub *astisub.Subtitles
 	if strings.HasSuffix(file.Name, ".srt") {
-		content, readErr := io.ReadAll(fd)
+		// Capped as well: the file may have grown between Stat and Read.
+		content, readErr := io.ReadAll(io.LimitReader(fd, maxSubtitleBytes+1))
 		if readErr != nil {
 			return http.StatusInternalServerError, readErr
+		}
+		if int64(len(content)) > maxSubtitleBytes {
+			return http.StatusRequestEntityTooLarge, nil
 		}
 		sub, err = astisub.ReadFromSRT(bytes.NewReader(normalizeSRTLineBreaks(content)))
 	} else if strings.HasSuffix(file.Name, ".ass") || strings.HasSuffix(file.Name, ".ssa") {
