@@ -26,9 +26,19 @@ func Search(ctx context.Context,
 	scope = filepath.ToSlash(filepath.Clean(scope))
 	scope = path.Join("/", scope)
 
-	return afero.Walk(fs, scope, func(fPath string, f os.FileInfo, _ error) error {
+	return afero.Walk(fs, scope, func(fPath string, f os.FileInfo, err error) error {
 		if ctx.Err() != nil {
 			return context.Cause(ctx)
+		}
+		if err != nil {
+			// Unreadable entries (for example paths the scoped
+			// filesystem confines) arrive with nil FileInfo. Skip the
+			// subtree instead of passing nil down to found(), whose
+			// callers dereference it.
+			if f != nil && f.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		fPath = filepath.ToSlash(filepath.Clean(fPath))
 		fPath = path.Join("/", fPath)

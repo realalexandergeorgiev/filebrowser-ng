@@ -59,6 +59,9 @@ var searchHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *dat
 	query := r.URL.Query().Get("query")
 
 	err := search.Search(ctx, d.user.Fs, r.URL.Path, query, d, func(path string, f os.FileInfo) error {
+		if f == nil {
+			return nil
+		}
 		select {
 		case <-ctx.Done():
 		case response <- map[string]interface{}{
