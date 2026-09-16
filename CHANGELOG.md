@@ -24,6 +24,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * Brute-force budgets (`http/ratelimit.go`, `http/auth.go`): login/signup had no protection (docs delegated to fail2ban). New per-TCP-peer sliding window (10/min each, forwarded headers ignored) answers `429` with `Retry-After`. Tests in `http/ratelimit_test.go` (unit with fake clock, handler-level 403→429).
 * Share access control (`http/share.go`, `http/resource.go`): creating a share no longer skips the rules check (denied paths returned a minted hash oracle); renames invalidate shares under source and overwritten destination (share hijack). Tests fail on the old behavior, pass on the new.
 * Share hash entropy (`http/share.go`): hashes grow from 6 bytes (48-bit, enumerable) to 16 bytes (128-bit, padding-free base64url). Old links are invalid (full-break fork). Test decodes every minted hash and asserts 16 bytes plus uniqueness.
+* Secrets hygiene (`cmd/`): exports (`config export`, `users export` incl. backups) are written `0600` even over existing files; `config export` redacts the JWT signing key (import already keeps the database key, so nothing is lost) and warns that auther credentials remain; new `config rotate-key` invalidates every token at once. Tests in `cmd/secrets_test.go`.
 
 ### Removed
 

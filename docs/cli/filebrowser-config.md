@@ -26,5 +26,6 @@ Configuration management utility.
 * [filebrowser config export](filebrowser-config-export.md)	 - Export the configuration to a file
 * [filebrowser config import](filebrowser-config-import.md)	 - Import a configuration file
 * [filebrowser config init](filebrowser-config-init.md)	 - Initialize a new database
+* [filebrowser config rotate-key](filebrowser-config-rotate-key.md)	 - Generate a new signing key, invalidating all tokens
 * [filebrowser config set](filebrowser-config-set.md)	 - Updates the configuration
 

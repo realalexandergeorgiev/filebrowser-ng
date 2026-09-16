@@ -1,11 +1,24 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
+
+	"github.com/filebrowser/filebrowser/v2/settings"
 )
 
 func init() {
 	configCmd.AddCommand(configExportCmd)
+}
+
+// withoutKey returns a copy of s with the signing key removed. The key
+// forges admin JWTs, so it must never land in an export file; import
+// already keeps the database key (or generates one), so nothing is lost.
+func withoutKey(s *settings.Settings) *settings.Settings {
+	out := *s
+	out.Key = nil
+	return &out
 }
 
 var configExportCmd = &cobra.Command{
@@ -32,7 +45,7 @@ and imported again with 'config import' command.`,
 		}
 
 		data := &settingsFile{
-			Settings: settings,
+			Settings: withoutKey(settings),
 			Auther:   auther,
 			Server:   server,
 		}
@@ -41,6 +54,7 @@ and imported again with 'config import' command.`,
 		if err != nil {
 			return err
 		}
+		log.Printf("exported configuration to %s (signing key redacted; the file still holds auther credentials, keep it private)", args[0])
 		return nil
 	}, storeOptions{}),
 }
