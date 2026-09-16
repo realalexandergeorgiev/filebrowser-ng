@@ -183,13 +183,16 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		defer r.Body.Close()
 	}
 
-	bytes := make([]byte, 6)
+	// 128-bit hashes: the old 6-byte (48-bit) hashes were enumerable without
+	// any rate limit. Old links are invalid after this change (full-break fork).
+	const shareHashBytes = 16
+	bytes := make([]byte, shareHashBytes)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
-	str := base64.URLEncoding.EncodeToString(bytes)
+	str := base64.RawURLEncoding.EncodeToString(bytes)
 
 	var expire int64 = 0
 

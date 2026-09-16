@@ -1,6 +1,7 @@
 package fbhttp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -170,7 +171,49 @@ func signShareTestToken(t *testing.T, st *storage.Storage, id uint, username str
 	return signed
 }
 
-// A share must not be created for a rules-denied path: minting the hash
+// Share hashes must carry 128 bits: the old 6-byte hashes were enumerable.
+func TestShareHashEntropy(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(userScope, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(userScope, "f.txt"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Share: true, Download: true}
+	st := scopedUserStorage(t, userScope, perm, key)
+	signed := signToken(t, st, perm, key)
+
+	seen := map[string]struct{}{}
+	for i := 0; i < 5; i++ {
+		req, _ := http.NewRequest(http.MethodPost, "/f.txt", strings.NewReader(`{}`))
+		req.Header.Set("X-Auth", signed)
+		rec := httptest.NewRecorder()
+		handle(sharePostHandler, "", st, &settings.Server{Root: root}).ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("share = %d body=%q, want 200", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatal(err)
+		}
+		hash, _ := resp["hash"].(string)
+		raw, err := base64.RawURLEncoding.DecodeString(hash)
+		if err != nil {
+			t.Fatalf("hash %q is not raw URL-safe base64: %v", hash, err)
+		}
+		if len(raw) != 16 {
+			t.Fatalf("VULNERABLE: hash carries %d bytes, want 16 (128-bit)", len(raw))
+		}
+		if _, dup := seen[hash]; dup {
+			t.Fatalf("duplicate hash %q", hash)
+		}
+		seen[hash] = struct{}{}
+	}
+}
 // would oracle-expose the denial even though access is refused later.
 func TestSharePostDeniedPathForbidden(t *testing.T) {
 	root := t.TempDir()

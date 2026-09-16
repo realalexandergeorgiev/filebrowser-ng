@@ -23,6 +23,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * Security headers (`http/http.go`, `http/static.go`): global CSP gains `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'self'` (clickjacking/plugin/base-tag abuse); new global `Referrer-Policy: no-referrer` keeps share `?token=` URLs out of third-party Referers; gzip assets set `Vary: Accept-Encoding` against cache poisoning. Tests in `http/headers_test.go`.
 * Brute-force budgets (`http/ratelimit.go`, `http/auth.go`): login/signup had no protection (docs delegated to fail2ban). New per-TCP-peer sliding window (10/min each, forwarded headers ignored) answers `429` with `Retry-After`. Tests in `http/ratelimit_test.go` (unit with fake clock, handler-level 403→429).
 * Share access control (`http/share.go`, `http/resource.go`): creating a share no longer skips the rules check (denied paths returned a minted hash oracle); renames invalidate shares under source and overwritten destination (share hijack). Tests fail on the old behavior, pass on the new.
+* Share hash entropy (`http/share.go`): hashes grow from 6 bytes (48-bit, enumerable) to 16 bytes (128-bit, padding-free base64url). Old links are invalid (full-break fork). Test decodes every minted hash and asserts 16 bytes plus uniqueness.
 
 ### Removed
 
