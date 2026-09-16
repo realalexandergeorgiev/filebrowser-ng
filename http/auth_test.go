@@ -50,7 +50,7 @@ func TestSignupRejectsCollidingNormalizedScope(t *testing.T) {
 		body := `{"username":"` + username + `","password":"CollidePw12345!"}`
 		req, _ := http.NewRequest(http.MethodPost, "/signup", strings.NewReader(body))
 		rec := httptest.NewRecorder()
-		handle(signupHandler, "", st, server).ServeHTTP(rec, req)
+		handle(signupHandler(), "", st, server).ServeHTTP(rec, req)
 		return rec
 	}
 

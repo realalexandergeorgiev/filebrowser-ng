@@ -23,6 +23,11 @@ const (
 	DefaultTokenExpirationTime = time.Hour * 2
 
 	maxAuthBodySize = 1 << 20 // 1 MiB
+
+	// Unauthenticated password-spray budgets per TCP peer and minute.
+	maxLoginAttempts  = 10
+	maxSignupAttempts = 10
+	rateLimitWindow   = time.Minute
 )
 
 type userInfo struct {
@@ -181,7 +186,11 @@ func withAdmin(fn handleFunc) handleFunc {
 }
 
 func loginHandler(tokenExpireTime time.Duration) handleFunc {
+	limit := newRateLimiter(maxLoginAttempts, rateLimitWindow)
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+		if !limit.check(w, r) {
+			return http.StatusTooManyRequests, nil
+		}
 		if r.Body != nil {
 			r.Body = http.MaxBytesReader(w, r.Body, maxAuthBodySize)
 		}
@@ -223,7 +232,17 @@ type signupBody struct {
 	Password string `json:"password"`
 }
 
-var signupHandler = func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+func signupHandler() handleFunc {
+	limit := newRateLimiter(maxSignupAttempts, rateLimitWindow)
+	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+		if !limit.check(w, r) {
+			return http.StatusTooManyRequests, nil
+		}
+		return signup(w, r, d)
+	}
+}
+
+var signup = func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	if !d.settings.Signup {
 		return http.StatusMethodNotAllowed, nil
 	}
