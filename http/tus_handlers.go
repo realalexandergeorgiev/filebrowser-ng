@@ -243,7 +243,11 @@ func tusPatchUpload(w http.ResponseWriter, r *http.Request, d *data, cache Uploa
 		)
 	}
 
-	openFile, err := d.user.Fs.OpenFile(r.URL.Path, os.O_WRONLY|os.O_APPEND, d.settings.FileMode)
+	// Plain O_WRONLY on purpose: O_APPEND would force every write to EOF and
+	// silently void the Seek below, so concurrent duplicate chunks would be
+	// appended instead of overwritten at their offset. The Size==offset check
+	// above plus positional writes make retries idempotent.
+	openFile, err := d.user.Fs.OpenFile(r.URL.Path, os.O_WRONLY, d.settings.FileMode)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("could not open file: %w", err)
 	}

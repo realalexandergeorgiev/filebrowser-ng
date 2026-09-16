@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/filebrowser/filebrowser/v2/settings"
@@ -69,6 +70,66 @@ func TestTusPatchEnforcesUploadLength(t *testing.T) {
 	}
 	if data, _ := os.ReadFile(filepath.Join(userScope, "file.txt")); string(data) != "hello" {
 		t.Fatalf("expected file content \"hello\", got %q", string(data))
+	}
+}
+
+// Concurrent duplicate chunks must not corrupt the file: every PATCH writes
+// positionally at its offset, so simultaneous retries overwrite the same
+// range instead of appending past it (which O_APPEND used to force).
+func TestTusPatchConcurrentDuplicates(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(userScope, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Create: true, Modify: true}
+	st := scopedUserStorage(t, userScope, perm, key)
+	signed := signToken(t, st, perm, key)
+
+	cache := newMemoryUploadCache()
+	t.Cleanup(cache.Close)
+	post := handle(tusPostHandler(cache), "", st, &settings.Server{})
+	patch := handle(tusPatchHandler(cache), "", st, &settings.Server{})
+
+	reqPost, _ := http.NewRequest(http.MethodPost, "/dup.txt", http.NoBody)
+	reqPost.Header.Set("X-Auth", signed)
+	reqPost.Header.Set("Upload-Length", "5")
+	recPost := httptest.NewRecorder()
+	post.ServeHTTP(recPost, reqPost)
+	if recPost.Code != http.StatusCreated {
+		t.Fatalf("POST expected 201, got %d body=%q", recPost.Code, recPost.Body.String())
+	}
+
+	const workers = 32
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			req, _ := http.NewRequest(http.MethodPatch, "/dup.txt", strings.NewReader("hello"))
+			req.Header.Set("X-Auth", signed)
+			req.Header.Set("Content-Type", "application/offset+octet-stream")
+			req.Header.Set("Upload-Offset", "0")
+			rec := httptest.NewRecorder()
+			patch.ServeHTTP(rec, req)
+		}()
+	}
+	close(start)
+	wg.Wait()
+
+	fi, err := os.Stat(filepath.Join(userScope, "dup.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Size() != 5 {
+		t.Fatalf("VULNERABLE: concurrent duplicate chunks left %d bytes, want 5", fi.Size())
+	}
+	if data, _ := os.ReadFile(filepath.Join(userScope, "dup.txt")); string(data) != "hello" {
+		t.Fatalf("expected %q, got %q", "hello", string(data))
 	}
 }
 
