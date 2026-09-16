@@ -186,6 +186,15 @@ func TestVerifySwapNeverEscapes(t *testing.T) {
 		}
 		if string(content) == "OUTSIDE-SECRET" {
 			leaks++
+			if link, lerr := os.Readlink(swap); lerr == nil {
+				if dest, derr := os.Readlink(link); derr == nil {
+					t.Logf("leak at iter %d: swap->%s->%s", i, link, dest)
+				} else {
+					t.Logf("leak at iter %d: swap->%s (direct file?)", i, link)
+				}
+			} else {
+				t.Logf("leak at iter %d: swap unreadable: %v", i, lerr)
+			}
 		} else if string(content) != "INSIDE" {
 			t.Fatalf("unexpected content %q", content)
 		}

@@ -174,6 +174,23 @@ func (s *ScopedFs) within(p string) (bool, error) {
 	return resolved == root || strings.HasPrefix(resolved, prefix), nil
 }
 
+// osFileOf unwraps afero layers (notably BasePathFile, which BasePathFs
+// returns for every open) down to the *os.File the kernel gave out, so
+// descriptor checks inspect the real open file. Anything else yields nil.
+func osFileOf(f afero.File) *os.File {
+	for f != nil {
+		if of, ok := f.(*os.File); ok {
+			return of
+		}
+		bf, ok := f.(*afero.BasePathFile)
+		if !ok {
+			return nil
+		}
+		f = bf.File
+	}
+	return nil
+}
+
 func (s *ScopedFs) Create(name string) (afero.File, error) {
 	if err := s.guard(name); err != nil {
 		return nil, err

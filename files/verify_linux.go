@@ -28,8 +28,8 @@ func (s *ScopedFs) verify(f afero.File) error {
 	if !s.verifyFD.Load() {
 		return nil
 	}
-	of, ok := f.(*os.File)
-	if !ok {
+	of := osFileOf(f)
+	if of == nil {
 		return nil
 	}
 	target, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", of.Fd()))
