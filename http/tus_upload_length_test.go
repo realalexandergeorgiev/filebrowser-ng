@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/filebrowser/filebrowser/v2/diskcache"
+
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/users"
 )
@@ -130,6 +132,71 @@ func TestTusPatchConcurrentDuplicates(t *testing.T) {
 	}
 	if data, _ := os.ReadFile(filepath.Join(userScope, "dup.txt")); string(data) != "hello" {
 		t.Fatalf("expected %q, got %q", "hello", string(data))
+	}
+}
+
+// A TUS delete must authorize like a resource delete: the path may have
+// become a directory since the upload started, so deleting without a
+// descendants check would remove rules-denied children through the parent.
+func TestTusDeleteEnforcesDescendantRules(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	if err := os.MkdirAll(userScope, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Create: true, Modify: true, Delete: true}
+	st := denyRuleStorage(t, userScope, "/swap/secret", perm, key)
+	signed := signToken(t, st, perm, key)
+
+	cache := newMemoryUploadCache()
+	t.Cleanup(cache.Close)
+	srv := &settings.Server{}
+	post := handle(tusPostHandler(cache), "", st, srv)
+	patch := handle(tusPatchHandler(cache), "", st, srv)
+	del := handle(tusDeleteHandler(cache, diskcache.NewNoOp()), "", st, srv)
+
+	// Incomplete upload: the cache entry survives for the delete below.
+	reqPost, _ := http.NewRequest(http.MethodPost, "/swap", http.NoBody)
+	reqPost.Header.Set("X-Auth", signed)
+	reqPost.Header.Set("Upload-Length", "10")
+	recPost := httptest.NewRecorder()
+	post.ServeHTTP(recPost, reqPost)
+	if recPost.Code != http.StatusCreated {
+		t.Fatalf("POST expected 201, got %d body=%q", recPost.Code, recPost.Body.String())
+	}
+	reqPatch, _ := http.NewRequest(http.MethodPatch, "/swap", strings.NewReader("hello"))
+	reqPatch.Header.Set("X-Auth", signed)
+	reqPatch.Header.Set("Content-Type", "application/offset+octet-stream")
+	reqPatch.Header.Set("Upload-Offset", "0")
+	recPatch := httptest.NewRecorder()
+	patch.ServeHTTP(recPatch, reqPatch)
+	if recPatch.Code != http.StatusNoContent {
+		t.Fatalf("PATCH expected 204, got %d body=%q", recPatch.Code, recPatch.Body.String())
+	}
+
+	// The uploaded file becomes a directory holding a denied child.
+	denied := filepath.Join(userScope, "swap", "secret", "marker.txt")
+	if err := os.Remove(filepath.Join(userScope, "swap")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(denied), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(denied, []byte("SECRET"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	reqDel, _ := http.NewRequest(http.MethodDelete, "/swap", http.NoBody)
+	reqDel.Header.Set("X-Auth", signed)
+	recDel := httptest.NewRecorder()
+	del.ServeHTTP(recDel, reqDel)
+	if recDel.Code != http.StatusForbidden {
+		t.Fatalf("DELETE = %d body=%q, want 403", recDel.Code, recDel.Body.String())
+	}
+	if _, err := os.Stat(denied); err != nil {
+		t.Fatalf("VULNERABLE: denied descendant deleted through its TUS parent: %v", err)
 	}
 }
 

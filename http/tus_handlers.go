@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -297,7 +298,7 @@ func tusPatchUpload(w http.ResponseWriter, r *http.Request, d *data, cache Uploa
 	return http.StatusNoContent, nil
 }
 
-func tusDeleteHandler(cache UploadCache) handleFunc {
+func tusDeleteHandler(cache UploadCache, fileCache FileCache) handleFunc {
 	return withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.URL.Path == "/" || !d.user.Perm.Delete {
 			return http.StatusForbidden, nil
@@ -318,6 +319,23 @@ func tusDeleteHandler(cache UploadCache) handleFunc {
 		_, err = cache.GetLength(file.RealPath())
 		if err != nil {
 			return http.StatusNotFound, err
+		}
+
+		// Same hardening as resource deletes: the path may have become a
+		// directory since the upload started, so authorize the whole tree
+		// and clean up shares and thumbnails with it.
+		if err = checkDescendants(d, r.URL.Path, ""); err != nil {
+			return errToStatus(err), err
+		}
+
+		err = d.store.Share.DeleteWithPathPrefix(file.Path, d.user.ID)
+		if err != nil {
+			log.Printf("WARNING: Error(s) occurred while deleting associated shares with file: %s", err)
+		}
+
+		err = delThumbs(r.Context(), fileCache, file)
+		if err != nil {
+			return errToStatus(err), err
 		}
 
 		err = d.user.Fs.RemoveAll(r.URL.Path)
