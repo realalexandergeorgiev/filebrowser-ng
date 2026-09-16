@@ -48,12 +48,6 @@
         </template>
 
         <action
-          v-if="headerButtons.shell"
-          icon="code"
-          :label="t('buttons.shell')"
-          @action="layoutStore.toggleShell"
-        />
-        <action
           :icon="viewIcon"
           :label="t('buttons.switchView')"
           @action="switchView"
@@ -346,7 +340,6 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
 import { users, files as api } from "@/api";
-import { enableExec } from "@/utils/constants";
 import * as upload from "@/utils/upload";
 import buttons from "@/utils/buttons";
 import css from "@/utils/css";
@@ -478,7 +471,6 @@ const headerButtons = computed(() => {
   return {
     upload: authStore.user?.perm.create,
     download: authStore.user?.perm.download,
-    shell: authStore.user?.perm.execute && enableExec,
     delete: fileStore.selectedCount > 0 && authStore.user?.perm.delete,
     rename: fileStore.selectedCount === 1 && authStore.user?.perm.rename,
     share:

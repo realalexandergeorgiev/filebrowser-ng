@@ -56,7 +56,6 @@
     </p>
 
     <permissions v-model:perm="user.perm" />
-    <commands v-if="enableExec" v-model:commands="user.commands" />
 
     <div v-if="!isDefault">
       <h3>{{ t("settings.rules") }}</h3>
@@ -70,8 +69,6 @@
 import Languages from "./Languages.vue";
 import Rules from "./Rules.vue";
 import Permissions from "./Permissions.vue";
-import Commands from "./Commands.vue";
-import { enableExec } from "@/utils/constants";
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 

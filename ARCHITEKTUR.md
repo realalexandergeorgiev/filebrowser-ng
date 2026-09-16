@@ -3,9 +3,10 @@
 > Fork of `filebrowser/filebrowser` (archived 2026-09-01, last release `v2.63.23`).
 > Goal: security-hardened, maintainable rewrite. Docs language: English.
 > Status: audit complete; fixes landing per commit (see `CHANGELOG.md`):
-> exec/runner/hooks/web shell removed, hook auth removed, share sweep fixed,
-> TUS path disclosure fixed, branding traversal fixed, server-side sessions
-> done. Module path rename (`github.com/filebrowser/filebrowser/v2` →
+> exec/runner/hooks/web shell removed (backend + frontend UI), hook auth
+> removed, share sweep fixed, TUS path disclosure fixed, branding traversal
+> fixed, server-side sessions done. Module path rename
+> (`github.com/filebrowser/filebrowser/v2` →
 > `github.com/filebrowser-ng/...`) is deferred to the rewrite start to keep
 > the baseline buildable.
 

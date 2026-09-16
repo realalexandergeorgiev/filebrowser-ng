@@ -48,17 +48,6 @@
           <p class="small">{{ t("settings.globalRules") }}</p>
           <rules v-model:rules="settings.rules" />
 
-          <div v-if="enableExec">
-            <h3>{{ t("settings.executeOnShell") }}</h3>
-            <p class="small">{{ t("settings.executeOnShellDescription") }}</p>
-            <input
-              class="input input--block"
-              type="text"
-              placeholder="bash -c, cmd /c, ..."
-              v-model="shellValue"
-            />
-          </div>
-
           <h3>{{ t("settings.branding") }}</h3>
 
           <i18n-t
@@ -190,58 +179,6 @@
         </div>
       </form>
     </div>
-
-    <div class="column">
-      <form v-if="enableExec" class="card" @submit.prevent="save">
-        <div class="card-title">
-          <h2>{{ t("settings.commandRunner") }}</h2>
-        </div>
-
-        <div class="card-content">
-          <i18n-t
-            keypath="settings.commandRunnerHelp"
-            tag="p"
-            class="small"
-            scope="global"
-          >
-            <code>FILE</code>
-            <code>SCOPE</code>
-            <a
-              class="link"
-              target="_blank"
-              href="https://github.com/filebrowser/filebrowser/blob/master/docs/command-execution.md#hook-runner"
-              >{{ t("settings.documentation") }}</a
-            >
-          </i18n-t>
-
-          <div
-            v-for="(command, key) in settings.commands"
-            :key="key"
-            class="collapsible"
-          >
-            <input :id="key" type="checkbox" />
-            <label :for="key">
-              <p>{{ capitalize(key) }}</p>
-              <i class="material-icons">arrow_drop_down</i>
-            </label>
-            <div class="collapse">
-              <textarea
-                class="input input--block input--textarea"
-                v-model.trim="commandObject[key]"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="card-action">
-          <input
-            class="button button--flat"
-            type="submit"
-            :value="t('buttons.update')"
-          />
-        </div>
-      </form>
-    </div>
   </div>
 </template>
 
@@ -252,7 +189,6 @@ import Rules from "@/components/settings/Rules.vue";
 import Themes from "@/components/settings/Themes.vue";
 import UserForm from "@/components/settings/UserForm.vue";
 import { useLayoutStore } from "@/stores/layout";
-import { enableExec } from "@/utils/constants";
 import { getTheme, setTheme } from "@/utils/theme";
 import Errors from "@/views/Errors.vue";
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue";
@@ -263,11 +199,6 @@ const originalSettings = ref<ISettings | null>(null);
 const settings = ref<ISettings | null>(null);
 const debounceTimeout = ref<number | null>(null);
 const pendingChunkSize = ref<string | null>(null);
-
-const commandObject = ref<{
-  [key: string]: string[] | string;
-}>({});
-const shellValue = ref<string>("");
 
 const $showError = inject<IToastError>("$showError")!;
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
@@ -315,52 +246,10 @@ const applyChunkSize = () => {
 };
 
 // Define funcs
-const capitalize = (name: string, where: string | RegExp = "_") => {
-  if (where === "caps") where = /(?=[A-Z])/;
-  const split = name.split(where);
-  name = "";
-
-  for (let i = 0; i < split.length; i++) {
-    name += split[i].charAt(0).toUpperCase() + split[i].slice(1) + " ";
-  }
-
-  return name.slice(0, -1);
-};
-
 const save = async () => {
   if (settings.value === null) return false;
   applyChunkSize();
-  const newSettings: ISettings = {
-    ...settings.value,
-    shell:
-      settings.value?.shell
-        .join(" ")
-        .trim()
-        .split(" ")
-        .filter((s: string) => s !== "") ?? [],
-    commands: {},
-  };
-
-  const keys = Object.keys(settings.value.commands) as Array<
-    keyof SettingsCommand
-  >;
-  for (const key of keys) {
-    // not sure if we can safely assume non-null
-    const newValue = commandObject.value[key];
-    if (!newValue) continue;
-
-    if (Array.isArray(newValue)) {
-      newSettings.commands[key] = newValue;
-    } else if (key in commandObject.value) {
-      newSettings.commands[key] = newValue
-        .split("\n")
-        .filter((cmd: string) => cmd !== "");
-    }
-  }
-  newSettings.shell = shellValue.value
-    .trim()
-    .split(" ")
-    .filter((s) => s !== "");
+  const newSettings: ISettings = { ...settings.value };
 
   if (newSettings.branding.theme !== getTheme()) {
     setTheme(newSettings.branding.theme);
@@ -419,17 +308,9 @@ onMounted(async () => {
   try {
     layoutStore.loading = true;
     const original: ISettings = await api.get();
-    const newSettings: ISettings = { ...original, commands: {} };
-
-    const keys = Object.keys(original.commands) as Array<keyof SettingsCommand>;
-    for (const key of keys) {
-      newSettings.commands[key] = original.commands[key];
-      commandObject.value[key] = original.commands[key]!.join("\n");
-    }
 
     originalSettings.value = original;
-    settings.value = newSettings;
-    shellValue.value = newSettings.shell.join(" ");
+    settings.value = { ...original };
   } catch (err) {
     if (err instanceof Error) {
       error.value = err;

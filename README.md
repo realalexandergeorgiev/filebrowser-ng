@@ -23,7 +23,7 @@ Background: [Goodbye File Browser, for Real This Time](https://hacdias.com/2026/
 
 Current branch: audit complete (`ARCHITEKTUR.md` §3), rewrite underway. Upstream P0 classes and their state here:
 
-- ~~Command execution/runner/hooks (`#5199`)~~ — **removed** (no `runner/`, no web shell, no hooks, no `--disable-exec`).
+- ~~Command execution/runner/hooks (`#5199`)~~ — **removed** backend (no `runner/`, no web shell, no hooks, no `--disable-exec`) and frontend (no terminal, no runner settings, no per-user commands field).
 - ~~Hook authentication (`CVE-2026-54088`)~~ — **removed** (remaining: `json`, `proxy`, `noauth`).
 - ~~Stateless JWT without revocation (`GO-2025-3812`/`CVE-2025-53826`/`#5216`)~~ — **done**: server-side sessions (`sessions/`, `DELETE /api/logout`, revocation on password/security change and delete).
 - Proxy header blind trust (`GO-2026-5966`) — **done**: header only honored from `TrustedProxies` (loopback-only by default).

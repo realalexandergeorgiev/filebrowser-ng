@@ -98,9 +98,6 @@ onBeforeUnmount(() => {
 
 onUnmounted(() => {
   fileStore.isFiles = false;
-  if (layoutStore.showShell) {
-    layoutStore.toggleShell();
-  }
   fileStore.updateRequest(null);
   fetchDataController.abort();
 });
