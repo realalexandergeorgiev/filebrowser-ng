@@ -11,12 +11,35 @@ tasks:
   build:backend:
     desc: Build backend binary
     cmds:
-      - go build -ldflags='-s -w -X "github.com/filebrowser/filebrowser/v2/version.Version={{.VERSION}}" -X "github.com/filebrowser/filebrowser/v2/version.CommitSHA={{.GIT_COMMIT}}"' -o filebrowser .
+      - go build -trimpath -ldflags='-s -w -X "github.com/filebrowser/filebrowser/v2/version.Version={{.VERSION}}" -X "github.com/filebrowser/filebrowser/v2/version.CommitSHA={{.GIT_COMMIT}}"' -o filebrowser .
     vars:
       GIT_COMMIT:
         sh: git log -n 1 --format=%h
       VERSION:
-        sh: git describe --tags --abbrev=0 --match=v* | cut -c 2-
+        sh: git describe --tags --abbrev=0 --match=v* 2>/dev/null | cut -c 2- || echo "0.0.0-ng"
+
+  audit:go:
+    desc: Go vulnerability scan (fails on known vulns)
+    cmds:
+      - go vet ./...
+      - go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  audit:frontend:
+    desc: Frontend dependency audit
+    dir: frontend
+    cmds:
+      - pnpm audit --audit-level=high
+
+  audit:
+    desc: All security audits (Go + frontend)
+    cmds:
+      - task: audit:go
+      - task: audit:frontend
+
+  test:go:
+    desc: Backend tests with race detector
+    cmds:
+      - go test -race ./...
 
   build:
     desc: Build both frontend and backend

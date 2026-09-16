@@ -10,6 +10,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * `ARCHITEKTUR.md`: audit baseline (P0–P3 with file refs), target design (server-side sessions, no exec, new ScopedFS/share/TUS), repo/build/test conventions.
 * `README.md`: rewritten as fork readme (breaking decisions, security status, roadmap, quickstart).
 * `SECURITY.md`: supported versions for the fork, private reporting, hardening expectations until `v0.1.0-ng`.
+* `Taskfile.yml`: reproducible backend builds (`-trimpath`, version fallback `0.0.0-ng` without tags), new `audit:go` (`go vet` + `govulncheck`), `audit:frontend` (`pnpm audit`), `audit`, `test:go` (`-race`).
 
 ### Changed
 
