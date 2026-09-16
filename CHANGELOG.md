@@ -11,6 +11,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * `README.md`: rewritten as fork readme (breaking decisions, security status, roadmap, quickstart).
 * `SECURITY.md`: supported versions for the fork, private reporting, hardening expectations until `v0.1.0-ng`.
 * `Taskfile.yml`: reproducible backend builds (`-trimpath`, version fallback `0.0.0-ng` without tags), new `audit:go` (`go vet` + `govulncheck`), `audit:frontend` (`pnpm audit`), `audit`, `test:go` (`-race`).
+* Audit PoCs (characterization, green on v2 baseline, must flip with the rewrite): `http/audit_p0_sessions_test.go` (LastUpdate hint-only, P0-C1), `runner/audit_p0_exec_test.go` (shell allowlist shape, P0-C4), `share/audit_p0_sweep_test.go` (consecutive-expiry sweep skip).
 
 ### Changed
 
