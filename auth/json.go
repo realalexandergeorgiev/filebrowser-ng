@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/users"
@@ -80,6 +81,10 @@ func (a JSONAuth) LoginPage() bool {
 
 const reCaptchaAPI = "/recaptcha/api/siteverify"
 
+// reCaptchaHTTPTimeout bounds verification so a hanging host cannot block
+// logins forever. A var for tests.
+var reCaptchaHTTPTimeout = 10 * time.Second
+
 // ReCaptcha identifies a recaptcha connection.
 type ReCaptcha struct {
 	Host   string `json:"host"`
@@ -93,7 +98,8 @@ func (r *ReCaptcha) Ok(response string) (bool, error) {
 	body.Set("secret", r.Secret)
 	body.Add("response", response)
 
-	client := &http.Client{}
+	// A hanging verification host must not block logins forever.
+	client := &http.Client{Timeout: reCaptchaHTTPTimeout}
 
 	resp, err := client.Post(
 		r.Host+reCaptchaAPI,
