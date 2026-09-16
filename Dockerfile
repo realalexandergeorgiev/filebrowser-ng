@@ -2,9 +2,12 @@
 FROM alpine:3.23 AS fetcher
 
 # install and copy ca-certificates, mailcap, and tini-static; download JSON.sh
+# The JSON.sh commit is pinned and checksum-verified so a compromised
+# raw host cannot smuggle code into the image.
 RUN apk update && \
     apk --no-cache add ca-certificates mailcap tini-static && \
-    wget -O /JSON.sh https://raw.githubusercontent.com/dominictarr/JSON.sh/0d5e5c77365f63809bf6e77ef44a1f34b0e05840/JSON.sh
+    wget -O /JSON.sh https://raw.githubusercontent.com/dominictarr/JSON.sh/0d5e5c77365f63809bf6e77ef44a1f34b0e05840/JSON.sh && \
+    echo "c741d553700f9b1ecf887ea28eda3ad8137a8709985e3f1842fb89dfcb94a18d  /JSON.sh" | sha256sum -c -
 
 ## Second stage: Use lightweight BusyBox image for final runtime environment
 FROM busybox:1.37.0-musl
