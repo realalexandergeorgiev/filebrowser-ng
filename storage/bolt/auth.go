@@ -1,15 +1,22 @@
 package bolt
 
 import (
-	"github.com/asdine/storm/v3"
+	"encoding/json"
+
+	boltapi "go.etcd.io/bbolt"
 
 	"github.com/filebrowser/filebrowser/v2/auth"
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
 	"github.com/filebrowser/filebrowser/v2/settings"
 )
 
+// configBucket and the "auther" key match the storm key/value layout, so
+// rows written before the migration stay readable and rollbacks work.
+// The bucket stays shared with the settings backend until it migrates too.
+const configBucket = "config"
+
 type authBackend struct {
-	db *storm.DB
+	db *boltapi.DB
 }
 
 func (s authBackend) Get(t settings.AuthMethod) (auth.Auther, error) {
@@ -26,9 +33,34 @@ func (s authBackend) Get(t settings.AuthMethod) (auth.Auther, error) {
 		return nil, fberrors.ErrInvalidAuthMethod
 	}
 
-	return auther, get(s.db, "auther", auther)
+	err := s.db.View(func(tx *boltapi.Tx) error {
+		b := tx.Bucket([]byte(configBucket))
+		if b == nil {
+			return fberrors.ErrNotExist
+		}
+		raw := b.Get([]byte("auther"))
+		if raw == nil {
+			return fberrors.ErrNotExist
+		}
+		return json.Unmarshal(raw, auther)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return auther, nil
 }
 
 func (s authBackend) Save(a auth.Auther) error {
-	return save(s.db, "auther", a)
+	raw, err := json.Marshal(a)
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(tx *boltapi.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte(configBucket))
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte("auther"), raw)
+	})
 }
