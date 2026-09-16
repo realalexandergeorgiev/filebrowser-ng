@@ -29,6 +29,7 @@ Upstream v2 history is preserved below. See `ARCHITEKTUR.md` for target design.
 * Server timeouts (`cmd/root.go`): only `ReadHeaderTimeout` was set (slowloris). Construction moved to `newHTTPServer` with an additional `IdleTimeout`; total read/write timeouts stay off so large transfers survive. Test asserts the values.
 * Preview request scope (`http/preview.go`): resize ran on `context.Background`, so client aborts kept burning CPU. Resize is bound to the request context (cache write stays detached by design). Test fails pre-fix, passes post-fix.
 * Disk cache locks (`diskcache/file_cache.go`): per-key mutexes accumulated forever in a map, and loads raced stores. Fixed 64-entry striped `RWMutex` set (constant memory, read-locked loads). Concurrency tests run under `-race`.
+* Dependencies (`go.mod`): `govulncheck` reports no reachable vulnerabilities. Bumped `x/crypto`/`x/image` (+ transitive `x/sync`/`x/sys`/`x/text`) to latest, clearing 4 of 5 uncalled module findings; `GO-2026-5932` persists unfixed upstream and is not called by this code.
 
 ### Removed
 
