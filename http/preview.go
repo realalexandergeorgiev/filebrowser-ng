@@ -9,8 +9,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/img"
 )
@@ -39,18 +37,16 @@ func previewHandler(imgSvc ImgService, fileCache FileCache, enableThumbnails, re
 		if !d.user.Perm.Download {
 			return http.StatusAccepted, nil
 		}
-		vars := mux.Vars(r)
-
-		previewSize, err := ParsePreviewSize(vars["size"])
+		previewSize, err := ParsePreviewSize(r.PathValue("size"))
 		if err != nil {
 			return http.StatusBadRequest, err
 		}
 
 		file, err := files.NewFileInfo(&files.FileOptions{
 			Fs: d.user.Fs,
-			// Preview reads its path from mux.Vars, not r.URL.Path, so it does
+			// Preview reads its path from the route wildcard, not r.URL.Path, so it does
 			// not get the canonicalization withUser applies.
-			Path:       slashClean(vars["path"]),
+			Path:       slashClean(r.PathValue("path")),
 			Modify:     d.user.Perm.Modify,
 			Expand:     true,
 			ReadHeader: d.server.TypeDetectionByHeader,

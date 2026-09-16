@@ -74,7 +74,7 @@ func TestRuleDeniesCaseVariantWhenFsIsCaseInsensitive(t *testing.T) {
 
 // Regression for GHSA-fgm5-pw99-w2p7: a path is canonicalized before it is
 // matched against the rules, so a traversal sequence cannot reach a denied file
-// by spelling its way there. gorilla/mux cleans forward-slash traversal before
+// by spelling its way there. The stdlib mux cleans forward-slash traversal before
 // routing, so this is defense in depth on POSIX; on Windows the equivalent
 // backslash form reaches the handler intact, which cleanSeparators covers.
 func TestRuleDeniesTraversalToDeniedPath(t *testing.T) {

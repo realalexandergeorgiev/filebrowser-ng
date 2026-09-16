@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/mux"
 
 	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
 	"github.com/filebrowser/filebrowser/v2/settings"
@@ -197,7 +196,7 @@ func TestDeletedUserTokenRejected(t *testing.T) {
 func sessionPut(t *testing.T, st *storage.Storage, token, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	req, _ := http.NewRequest(http.MethodPut, "/users/1", strings.NewReader(body))
-	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	req.SetPathValue("id", "1")
 	req.Header.Set("X-Auth", token)
 	rec := httptest.NewRecorder()
 	handle(userPutHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
@@ -247,7 +246,7 @@ func TestDeleteRevokesSessions(t *testing.T) {
 
 	body := fmt.Sprintf(`{"current_password":%q}`, sessionTestPassword)
 	req, _ := http.NewRequest(http.MethodDelete, "/users/1", strings.NewReader(body))
-	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	req.SetPathValue("id", "1")
 	req.Header.Set("X-Auth", token)
 	rec := httptest.NewRecorder()
 	handle(userDeleteHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)

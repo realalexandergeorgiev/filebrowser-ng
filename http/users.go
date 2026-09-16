@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -28,8 +27,7 @@ type modifyUserRequest struct {
 }
 
 func getUserID(r *http.Request) (uint, error) {
-	vars := mux.Vars(r)
-	i, err := strconv.ParseUint(vars["id"], 10, 0)
+	i, err := strconv.ParseUint(r.PathValue("id"), 10, 0)
 	if err != nil {
 		return 0, err
 	}

@@ -15,8 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	"github.com/filebrowser/filebrowser/v2/img"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/users"
@@ -69,7 +67,8 @@ func TestPreviewResizeBoundToRequest(t *testing.T) {
 	h := handle(previewHandler(svc, svc, true, true), "/api/preview", st, &settings.Server{})
 
 	req, _ := http.NewRequest(http.MethodGet, "/thumb/pic.png", http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{"size": "thumb", "path": "pic.png"})
+	req.SetPathValue("size", "thumb")
+	req.SetPathValue("path", "pic.png")
 	// A real server request always carries a cancelable context;
 	// httptest.NewRequest does not, so attach one explicitly.
 	ctx, cancel := context.WithCancel(req.Context())
