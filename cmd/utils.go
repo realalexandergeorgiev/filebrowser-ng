@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/asdine/storm/v3"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -93,7 +92,7 @@ func initViper(cmd *cobra.Command) (*viper.Viper, error) {
 
 	// Configuration file
 	if cfgFile == "" {
-		home, err := homedir.Dir()
+		home, err := os.UserHomeDir()
 		if err != nil {
 			return nil, err
 		}
