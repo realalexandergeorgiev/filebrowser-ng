@@ -166,7 +166,43 @@ onMounted(() => {
     if (isMarkdownFile && isPreview.value) {
       const new_value = editor.value?.getValue() || "";
       try {
-        previewContent.value = DOMPurify.sanitize(await marked(new_value));
+        // The preview is the only v-html sink in the app, fed by file
+        // content: pin an explicit denylist on top of DOMPurify defaults
+        // so marked/KaTeX output stays formatting-only even if library
+        // defaults ever widen.
+        previewContent.value = DOMPurify.sanitize(await marked(new_value), {
+          FORBID_TAGS: [
+            "style",
+            "form",
+            "input",
+            "button",
+            "textarea",
+            "select",
+            "option",
+            "fieldset",
+            "label",
+            "object",
+            "embed",
+            "iframe",
+            "frame",
+            "frameset",
+            "base",
+            "link",
+            "meta",
+            "script",
+            "noscript",
+            "template",
+            "slot",
+            "canvas",
+          ],
+          FORBID_ATTR: [
+            "action",
+            "formaction",
+            "xlink:href",
+            "srcset",
+            "poster",
+          ],
+        });
       } catch (error) {
         console.error("Failed to convert content to HTML:", error);
         previewContent.value = "";

@@ -62,7 +62,7 @@ export function download(
     url += `token=${token}&`;
   }
 
-  window.open(url);
+  window.open(url, "_blank", "noopener");
 }
 
 export function getDownloadURL(res: Resource, inline = false) {

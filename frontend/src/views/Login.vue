@@ -47,6 +47,7 @@
 <script setup lang="ts">
 import { StatusError } from "@/api/utils";
 import * as auth from "@/utils/auth";
+import { sanitizeRedirect } from "@/utils/url";
 import {
   name,
   logoURL,
@@ -79,7 +80,7 @@ const submit = async (event: Event) => {
   event.preventDefault();
   event.stopPropagation();
 
-  const redirect = (route.query.redirect || "/files/") as string;
+  const redirect = sanitizeRedirect(route.query.redirect);
 
   let captcha = "";
   if (recaptcha) {

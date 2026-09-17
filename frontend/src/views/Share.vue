@@ -109,6 +109,7 @@
           <div class="share__box__element share__box__center">
             <a
               target="_blank"
+              rel="noopener noreferrer"
               :href="link"
               class="button button--flat"
               style="height: 4em"
@@ -120,6 +121,7 @@
             </a>
             <a
               target="_blank"
+              rel="noopener noreferrer"
               :href="inlineLink"
               class="button button--flat"
               v-if="!req.isDir"
@@ -153,6 +155,7 @@
           >
             <a
               target="_blank"
+              rel="noopener noreferrer"
               :href="raw"
               class="button button--flat"
               v-if="

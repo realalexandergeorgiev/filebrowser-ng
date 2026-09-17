@@ -59,6 +59,7 @@
             <a
               class="link"
               target="_blank"
+              rel="noopener noreferrer"
               href="https://github.com/realalexandergeorgiev/filebrowser-ng/blob/main/docs/customization.md#custom-branding"
               >{{ t("settings.documentation") }}</a
             >

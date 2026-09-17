@@ -16,7 +16,9 @@ defineProps<{
 
 const clicked = () => {
   window.open(
-    "https://github.com/realalexandergeorgiev/filebrowser-ng/issues/new/choose"
+    "https://github.com/realalexandergeorgiev/filebrowser-ng/issues/new/choose",
+    "_blank",
+    "noopener"
   );
 };
 </script>

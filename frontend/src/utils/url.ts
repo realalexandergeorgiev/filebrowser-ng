@@ -35,8 +35,23 @@ export function encodePath(str: string) {
     .join("/");
 }
 
+// Only in-app paths are valid login redirect targets: anything else
+// (protocol-relative URLs, non-strings from repeated params) falls back
+// to the file browser root. router.push stays in-app, but a "//host"
+// path would throw in pushState, so it is rejected too.
+export function sanitizeRedirect(raw: unknown): string {
+  if (typeof raw !== "string") {
+    return "/files/";
+  }
+  if (!raw.startsWith("/") || raw.startsWith("//")) {
+    return "/files/";
+  }
+  return raw;
+}
+
 export default {
   encodeRFC5987ValueChars,
   removeLastDir,
   encodePath,
+  sanitizeRedirect,
 };

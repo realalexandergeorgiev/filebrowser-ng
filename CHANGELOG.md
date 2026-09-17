@@ -8,6 +8,13 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Fixed (audit)
 
+* Frontend hardening (`frontend/`): the markdown preview (the only `v-html`
+  sink) now sanitizes with an explicit `FORBID_TAGS`/`FORBID_ATTR` denylist
+  on top of DOMPurify defaults (verified in a real browser: `script`/`form`/
+  `javascript:`/`onerror`/`style` stripped, headings/tables/MathML/links
+  intact); login `redirect` accepts in-app paths only (`sanitizeRedirect`,
+  tested); `target=_blank` links carry `rel="noopener noreferrer"` and
+  `window.open` uses `noopener`.
 * Auth logging (`http/auth.go`, `http/users.go`): successful logins are now
   logged (`login: user %q from <ip>`), and usernames/home dirs in logs use
   `%q`, so a newline username can no longer forge log lines (tested).
