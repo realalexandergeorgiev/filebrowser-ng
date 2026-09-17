@@ -30,5 +30,10 @@ Do not open public issues for unpatched vulnerabilities. We aim to acknowledge w
 - Do not expose directly to the internet. Put behind a reverse proxy with TLS + own auth.
 - Run unprivileged in a container, mount only the served directory.
 - Keep any upstream exec feature disabled (it is being deleted here).
-- Treat leaked tokens as valid until expiry (server-side revocation lands with the auth rewrite).
+- Treat leaked access tokens as valid until expiry (at most the session
+  lifetime): logout, password change and user deletion revoke server-side,
+  but already-issued JWTs verify cryptographically until `exp`.
 - Treat `config export` output as secret (contains the JWT signing key in v2 baseline; export redaction lands with the config rewrite).
+- Share `?token=` URLs carry a 24 h sliding credential in the query string:
+  they end up in browser history and proxy logs. Prefer short-lived links
+  for sensitive files and rotate by re-entering the password.

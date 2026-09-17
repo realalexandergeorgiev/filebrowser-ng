@@ -120,3 +120,28 @@ Delete at rewrite start: `runner/`, `http/commands.go`, `docs/command-execution.
 - Frontend: `pnpm install --frozen-lockfile`, `vitest run`, `vue-tsc --noEmit`.
 - Security CI (to add): `govulncheck`, `pnpm audit`, `golangci-lint`, header/cookie e2e tests, `race` + fuzz on path/rules/share/session-reuse.
 - Commits: Conventional Commits (`fix!:`, `feat!:`, `docs:`, `chore:`, `test:`), one logical fix = one commit, `CHANGELOG.md` (`Unreleased → Added/Fixed/Removed/Breaking`) + `README.md` updated per user-visible change. This file updated when target changes.
+
+## 7. Residual risks (post-audit 2026-09-17)
+
+Accepted or still-open items. None is remotely exploitable as described;
+each lists what would have to give first.
+
+- **TOCTOU on metadata ops** (`files/scoped.go`): content opens are verified
+  against `/proc/self/fd` on Linux; `Rename`/`Remove`/`Mkdir`/`Stat`/etc.
+  are guard-only, and non-Linux builds are guard-only throughout.
+  Exploiting the race needs a concurrent in-scope swap plus a planted
+  symlink, and the API offers no symlink creation. Tracked in `TODO.md`
+  P2 (re-guard where atomicity allows).
+- **Token claims**: single-issuer HS256, `alg`/`exp`/`iss` enforced and
+  `jti` checked against server-side sessions. No `aud`/`kid`/`nbf`
+  (see `TODO.md` P2); cross-instance replay is out of scope as long as
+  each instance holds its own 512-bit key.
+- **Share `?token=` in URLs**: the sliding token (24 h) travels in the
+  query string, so it lands in browser history and proxy logs. Damage is
+  bounded by token age and scope; there is no POST alternative yet.
+- **No upload quota accounting**: `MaxUploadSize` caps single files, but
+  there is no per-user total quota — disk-fill by many small legitimate
+  uploads is an admin capacity question, not a bug.
+- **EPUB/books render attacker HTML** inside an `allow-same-origin`
+  sandbox without scripts or popups: no code execution, but book links
+  and forms are inert by design.

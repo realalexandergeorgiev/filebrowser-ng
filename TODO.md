@@ -83,11 +83,12 @@ Goal: cover the security-critical parsers/paths against malformed input.
 
 ### P2 — JWT claims hardening (`http/auth.go`)
 Goal: tokens are bound to this deployment and not replayable across instances.
-- Current `authToken` (`http/auth.go`) sets only `IssuedAt/ExpiresAt/Issuer`. Parser uses
-  `WithValidMethods([HS256]) + WithExpirationRequired`.
-- Add and enforce: `Subject` (user id), `NotBefore` always present, and verify
-  `Issuer` via `jwt.WithIssuer(...)`. Consider `Audience` = realm/baseURL.
-  A `jti` already exists (= session id, enforced by `withUser`).
+- Done: parser enforces `WithValidMethods([HS256]) + WithExpirationRequired
+  + WithIssuer("filebrowser-ng")` (`tokenIssuer`, tested in
+  `http/sessions_test.go`). A `jti` already exists (= session id, enforced
+  by `withUser`).
+- Open: `Subject` (user id), `NotBefore` always present. Consider `Audience`
+  = realm/baseURL.
 - Acceptance: a token with a wrong/absent issuer or a future `nbf` is rejected (401);
   regression test in `http/sessions_test.go`.
 

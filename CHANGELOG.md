@@ -8,6 +8,12 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Fixed (audit)
 
+* Audit residuals documented: `ARCHITEKTUR.md` §7 records the accepted
+  post-audit risks (metadata-op TOCTOU scope, token-claim scope, share
+  `?token=` in URLs/history, no per-user quota, inert EPUB links); the
+  stale "revocation lands later" note in `SECURITY.md` now describes the
+  actual behavior plus share-token hygiene. `TODO.md` P2 tracks what is
+  enforced (`alg`/`exp`/`iss`/`jti`) vs open (`sub`/`nbf`/`aud`).
 * Archive symlink cycles (`http/raw.go`): an in-scope symlink to an ancestor
   directory made the archive packer recurse forever (CPU/memory burn). The
   recursion now tracks directory ancestry by file identity and stops at the
