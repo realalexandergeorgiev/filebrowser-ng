@@ -178,6 +178,24 @@ func brandingFile(brandingDir, reqPath string) (string, bool) {
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return "", false
 	}
+	// A symlink planted inside the branding directory could otherwise point
+	// at an arbitrary host file, served here without authentication.
+	// Missing paths keep the lexical result so callers still fall through
+	// to the embedded assets.
+	if fi, err := os.Lstat(cleaned); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		realDir, err := filepath.EvalSymlinks(brandingDir)
+		if err != nil {
+			return "", false
+		}
+		realTarget, err := filepath.EvalSymlinks(cleaned)
+		if err != nil {
+			return "", false
+		}
+		rel, err := filepath.Rel(realDir, realTarget)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return "", false
+		}
+	}
 	return cleaned, true
 }
 

@@ -105,3 +105,33 @@ func TestBrandingFileContainment(t *testing.T) {
 		t.Errorf("empty branding dir must reject")
 	}
 }
+
+func TestBrandingSymlinkContained(t *testing.T) {
+	root := t.TempDir()
+	brandDir := filepath.Join(root, "brand")
+	if err := os.MkdirAll(filepath.Join(brandDir, "img"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(root, "outside.txt")
+	if err := os.WriteFile(outside, []byte("host-secret"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	inside := filepath.Join(brandDir, "img", "real.png")
+	if err := os.WriteFile(inside, []byte("img-bytes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Symlink escaping the branding directory must be rejected...
+	if err := os.Symlink(outside, filepath.Join(brandDir, "img", "evil.png")); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := brandingFile(brandDir, "img/evil.png"); ok {
+		t.Errorf("brandingFile followed a symlink outside the branding dir")
+	}
+	// ...while a symlink staying inside keeps working.
+	if err := os.Symlink(inside, filepath.Join(brandDir, "img", "alias.png")); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := brandingFile(brandDir, "img/alias.png"); !ok {
+		t.Errorf("brandingFile rejected an in-directory symlink")
+	}
+}

@@ -8,6 +8,10 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Fixed (audit)
 
+* Branding override symlink (`http/static.go`): `brandingFile` now resolves
+  symlinks and rejects ones escaping the branding directory (served
+  unauthenticated); in-directory symlinks and the fall-through to embedded
+  assets for missing files keep working (tested).
 * Frontend hardening (`frontend/`): the markdown preview (the only `v-html`
   sink) now sanitizes with an explicit `FORBID_TAGS`/`FORBID_ATTR` denylist
   on top of DOMPurify defaults (verified in a real browser: `script`/`form`/
