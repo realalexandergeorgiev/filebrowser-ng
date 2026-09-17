@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
 
 	"github.com/realalexandergeorgiev/filebrowser-ng/users"
@@ -77,6 +79,26 @@ var usersAddCmd = &cobra.Command{
 			return err
 		}
 		printUsers([]*users.User{user})
+		if list, err := st.Users.Gets("", false); err == nil && checkAdminBootstrap(list, user.Perm.Admin) {
+			log.Printf("WARNING: no admin user exists. Re-run with --perm.admin to create one, or settings and user management stay unreachable.")
+		}
 		return nil
 	}, storeOptions{}),
+}
+
+// checkAdminBootstrap reports whether adding a non-admin user leaves the
+// instance without any administrator. Fresh installs via `users add`
+// default to non-admin, so the first user usually triggers this. The
+// command only warns instead of failing: automation may create the admin
+// separately (e.g. quick setup does).
+func checkAdminBootstrap(all []*users.User, addedAdmin bool) bool {
+	if addedAdmin {
+		return false
+	}
+	for _, u := range all {
+		if u.Perm.Admin {
+			return false
+		}
+	}
+	return true
 }

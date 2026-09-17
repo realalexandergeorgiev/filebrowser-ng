@@ -41,6 +41,16 @@ go build -trimpath -o filebrowser-ng .
 cd frontend && pnpm install --frozen-lockfile && pnpm run build
 ```
 
+First run: `users add` defaults to non-admin, so create the first user
+with `--perm.admin` (otherwise settings and user management stay
+unreachable; the command warns when no admin exists):
+
+```bash
+./filebrowser-ng config init
+./filebrowser-ng users add admin 'change-me-12-or-more-chars' --perm.admin=true
+./filebrowser-ng
+```
+
 Docker / compose files are being reworked for non-root + `0700` + no hardcoded secrets. `docs/` still describes v2 and will be rewritten with the new API (`/api/v1`, OpenAPI).
 
 ## Roadmap
