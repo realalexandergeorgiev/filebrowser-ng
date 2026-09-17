@@ -8,6 +8,14 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Changed
 
+* CI for the fork (`.github/workflows/ci.yaml`): triggers on `main` +
+  tags (was `master`), backend build/vet/`test -race`, golangci,
+  `govulncheck`, frontend typecheck/lint/test/`audit`, release-checksums
+  verification, and tag-only release-artifact builds replacing the
+  upstream Docker-Hub/GoReleaser release. Toolchain pinned via
+  `go-version-file`.
+* Dependencies re-scanned: `govulncheck`/`pnpm audit` clean, `video.js` +
+  `vue` patches applied; no direct Go updates pending.
 * Rebrand consistency (full-break): default database is now
   `./filebrowser-ng.db` (`/database/filebrowser-ng.db` in the container
   defaults); `docs/installation.md` points at the fork releases page and

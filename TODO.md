@@ -138,12 +138,23 @@ Done 2026-09-17 (full-break decision: rename): default DB is
   history and the two fork-attribution lines in `README.md`/`ARCHITEKTUR.md`.
 
 ### P4 — CI
-- Add GitHub Actions: `go build/vet/test`, `govulncheck`, frontend
-  `typecheck/lint/test/build`, and a job that fails if `releases/checksums.txt` does not
-  verify. Keep the module path `github.com/realalexandergeorgiev/filebrowser-ng` in the
-  workflow cache keys.
+Done 2026-09-17: `.github/workflows/ci.yaml` rewritten for the fork —
+triggers on `main`/`filebrowser-ng` + `v*` tags and PRs (upstream file
+still pointed at `master`); jobs for backend build/vet/`test -race`,
+golangci-lint, `govulncheck`, frontend typecheck/lint/test/`audit`,
+`sha256sum -c releases/checksums.txt`, and tag-only release-artifact
+builds (frontend + 6 binaries with version ldflags, uploaded as
+artifacts) replacing the upstream Docker-Hub/GoReleaser release.
+`go-version-file: go.mod` pins the toolchain; cache keys carry the
+module path. PR-title lint (`lint-pr.yaml`) kept as is.
 
 ### P4 — Dependency hygiene
+- Re-scanned 2026-09-17: `govulncheck` 0 affecting (same uncalled
+  `GO-2026-5932` N/A); no direct Go module updates pending (only
+  indirect/test-only); `go-exif/v3` current, the older `v2` line is a
+  clean transitive. npm `audit` 0; `video.js`/`vue` patches applied.
+  Intentionally held majors: `@vueuse` 15, `pinia` 4, `typescript` 7,
+  `vitest` 5 (new).
 - Audited 2026-09-17: Go toolchain 1.26.8, direct modules bumped (astisub,
   go-redis, gopsutil, testify, x/net); `govulncheck` clean except uncalled
   `GO-2026-5932` (`x/crypto`, no fix available). npm updated in-range plus
