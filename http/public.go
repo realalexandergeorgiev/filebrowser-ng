@@ -179,6 +179,7 @@ func authenticateShareRequest(w http.ResponseWriter, r *http.Request, d *data, l
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(l.PasswordHash), []byte(password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			ipBans.fail(banKey(r, d.server.TrustedProxies))
 			return http.StatusUnauthorized, nil
 		}
 		return 0, err

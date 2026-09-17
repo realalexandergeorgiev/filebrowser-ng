@@ -17,6 +17,9 @@ import (
 )
 
 func TestSharePasswordRateLimited(t *testing.T) {
+	// Wrong guesses also feed the process-wide ban list: isolate it so this
+	// test does not ban the shared test peer for other tests.
+	swapBanList(t, maxBanFailures)
 	userScope := t.TempDir()
 	if err := os.WriteFile(filepath.Join(userScope, "secret.txt"), []byte("SECRET"), 0o600); err != nil {
 		t.Fatal(err)
@@ -51,13 +54,19 @@ func TestSharePasswordRateLimited(t *testing.T) {
 		t.Fatalf("correct password = %d body=%q, want 200", rec.Code, rec.Body.String())
 	}
 
-	// Wrong passwords are rejected until the budget is spent...
-	for i := 0; i < maxSharePasswordAttempts-1; i++ {
+	// Wrong passwords are rejected...
+	for i := 0; i < maxBanFailures-1; i++ {
 		if rec := try("wrong-password"); rec.Code != http.StatusUnauthorized {
 			t.Fatalf("guess %d = %d, want 401", i+1, rec.Code)
 		}
 	}
-	// ...then guessing stops with 429.
+	// ...the failure that spends the ban budget still answers 401 itself...
+	if rec := try("wrong-password"); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("ban-triggering guess = %d, want 401", rec.Code)
+	}
+	// ...and from now on the peer is banned from the whole API with 429.
+	// (The per-link burst budget above still slows bursts; the ban stops
+	// sustained guessing.)
 	rec := try("wrong-password")
 	if rec.Code != http.StatusTooManyRequests {
 		t.Fatalf("over-budget guess = %d, want 429", rec.Code)

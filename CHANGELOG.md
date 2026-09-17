@@ -6,6 +6,24 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+## [0.4.0-ng] - 2026-09-17
+
+### Added
+
+* Brute-force IP bans (`http/ipban.go`): peers with 10 failed authentications
+  in 10 minutes are banned from the whole API for 1 hour (429 + `Retry-After`,
+  ban logged as `banning <ip> for 1h0m0s after 10 auth failures in 10m0s`).
+  Only presented-but-wrong credentials count — wrong login/share passwords and
+  tokens with a bad signature. Missing, malformed or expired tokens and lapsed
+  sessions never count, so logged-out tabs cannot ban anyone; a successful
+  login clears the peer's record. Bans key on the TCP peer (forwarded headers
+  from untrusted peers are ignored, same rationale as the rate limiter); behind
+  a trusted proxy the forwarded client IP is banned instead, using the
+  rightmost `X-Forwarded-For` entry. In-process like the rate budgets (restart
+  clears, replicas do not share), entries expire and maps are capped at 10000
+  peers. Configure `Server.TrustedProxies` correctly when running behind a
+  reverse proxy so bans hit clients, not the proxy.
+
 ## [0.3.3-ng] - 2026-09-17
 
 ### Fixed

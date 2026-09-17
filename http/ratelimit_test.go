@@ -56,6 +56,9 @@ func TestPeerIPParsing(t *testing.T) {
 }
 
 func TestLoginRateLimited(t *testing.T) {
+	// Failed logins also feed the process-wide ban list: isolate it so the
+	// ten failures below do not ban the shared test peer for other tests.
+	swapBanList(t, maxBanFailures)
 	st, _ := sessionTestSetup(t)
 	h := handle(loginHandler(time.Hour), "", st, &settings.Server{})
 

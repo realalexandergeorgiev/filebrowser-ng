@@ -102,6 +102,13 @@ func handle(fn handleFunc, prefix string, store *storage.Storage, server *settin
 			w.Header().Set(k, v)
 		}
 
+		// Banned peers are refused before anything else: no settings load,
+		// no auth parsing, no handler work.
+		if !ipBans.check(w, r, server.TrustedProxies) {
+			http.Error(w, strconv.Itoa(http.StatusTooManyRequests)+" "+http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+			return
+		}
+
 		settings, err := store.Settings.Get()
 		if err != nil {
 			log.Fatalf("ERROR: couldn't get settings: %v\n", err)

@@ -9,8 +9,8 @@ AI-oriented backlog. Read this top-to-bottom in a fresh session before touching 
 - **Go module path:** `github.com/realalexandergeorgiev/filebrowser-ng`.
   All imports use this path; there is **no** `.../v2` suffix anymore.
 - **Language/toolchain:** Go 1.26.8 (`go.mod`), Node >= 24 + pnpm 10 for `frontend/`.
-- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`, `v0.3.1-ng`, `v0.3.2-ng`, `v0.3.3-ng`.
-- **Version string:** `version/version.go` defaults to `0.3.3-ng`; release builds
+- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`, `v0.3.1-ng`, `v0.3.2-ng`, `v0.3.3-ng`, `v0.4.0-ng`.
+- **Version string:** `version/version.go` defaults to `0.4.0-ng`; release builds
   inject `version.Version` / `version.CommitSHA` via `-ldflags`.
 - **Prebuilt binaries:** `releases/filebrowser-ng_<os>_<arch>[.exe]` + `releases/checksums.txt`.
   Rebuild with the script in §2, then refresh `checksums.txt`.
@@ -147,8 +147,9 @@ Goal: close the guard→op race for non-content operations too.
 - Re-evaluate `github.com/dsoprea/go-exif/v3` (EXIF metadata parsing) and any remaining
   EOL deps with `govulncheck -show verbose`. `gorilla/*`, `asdine/storm`,
   `mholt/archives`, `flynn/go-shlex`, `mitchellh/go-homedir` are already removed.
-- Rate limiter (`http/ratelimit.go`) is in-process; document that multi-replica
-  deployments behind a load balancer do not share budgets, or back it with Redis
+- Rate limiter (`http/ratelimit.go`) and IP bans (`http/ipban.go`) are
+  in-process; document that multi-replica deployments behind a load balancer
+  do not share budgets/bans, or back them with Redis
   (`upload_cache_redis.go` shows the Redis client wiring).
 
 ### P5 — i18n nice-to-have
@@ -186,3 +187,6 @@ Goal: close the guard→op race for non-content operations too.
   (`http/data.go` `formatRequestLog`, tested in `http/requestlog_test.go`).
 - Dependency audit 2026-09-17: Go 1.26.8, modules bumped, npm updated +
   overrides, `govulncheck` and `pnpm audit` clean (see P4 hygiene note).
+- Brute-force IP bans (`http/ipban.go`): 10 failed logins/share-passwords/
+  forged tokens in 10 min bans the peer API-wide for 1 h; trusted-proxy-aware
+  keying, capped/expiring, tested in `http/ipban_test.go`.

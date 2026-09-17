@@ -5,7 +5,7 @@
 > Status: post-`v0.1.0-ng` (see `CHANGELOG.md`): all P0 classes fixed
 > (exec removed incl. UI, hook auth removed, sessions server-side with
 > HttpOnly cookies, proxy peer trust, share sweep/acl/entropy/token-lifetime
-> fixed), plus TUS, headers, rate limits, secrets, search, timeouts,
+> fixed), plus TUS, headers, rate limits, IP bans, secrets, search, timeouts,
 > preview, diskcache, recaptcha, compose, subtitle, stdlib router, storm
 > removal, archives removal, TOCTOU descriptor verification.
 > Module path is `github.com/realalexandergeorgiev/filebrowser-ng`.

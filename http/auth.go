@@ -125,6 +125,18 @@ func proxyAsserts(r *http.Request, d *data, id uint) bool {
 	return user.ID == id
 }
 
+// presentedToken mirrors extractor: it reports whether the request carries
+// something shaped like a token, as opposed to no credential at all.
+func presentedToken(r *http.Request) bool {
+	if h := r.Header.Get("X-Auth"); h != "" && strings.Count(h, ".") == 2 {
+		return true
+	}
+	if c, _ := r.Cookie("auth"); c != nil && strings.Count(c.Value, ".") == 2 {
+		return true
+	}
+	return false
+}
+
 func withUser(fn handleFunc) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		keyFunc := func(_ *jwt.Token) (interface{}, error) {
@@ -135,6 +147,13 @@ func withUser(fn handleFunc) handleFunc {
 		p := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 		token, err := request.ParseFromRequest(r, &extractor{}, keyFunc, request.WithClaims(&tk), request.WithParser(p))
 		if (err != nil || !token.Valid) && !renewableErr(err, r, d, &tk) {
+			// Only forged tokens count towards a ban: missing, malformed or
+			// expired tokens (and sessions that lapsed server-side) are
+			// normal client state, not guessing. A bad signature means
+			// someone mints tokens without the signing key.
+			if presentedToken(r) && errors.Is(err, jwt.ErrTokenSignatureInvalid) {
+				ipBans.fail(banKey(r, d.server.TrustedProxies))
+			}
 			return http.StatusUnauthorized, nil
 		}
 
@@ -234,10 +253,14 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 		user, err := auther.Auth(r, d.store.Users, d.settings, d.server)
 		switch {
 		case errors.Is(err, os.ErrPermission):
+			ipBans.fail(banKey(r, d.server.TrustedProxies))
 			return http.StatusForbidden, nil
 		case err != nil:
 			return http.StatusInternalServerError, err
 		}
+
+		// A successful login proves legitimacy and clears the peer's record.
+		ipBans.reset(banKey(r, d.server.TrustedProxies))
 
 		sess, err := d.store.Sessions.Create(user.ID, tokenExpireTime)
 		if err != nil {
