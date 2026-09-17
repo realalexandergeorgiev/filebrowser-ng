@@ -6,6 +6,8 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+## [0.6.0-ng] - 2026-09-17
+
 ### Removed
 
 * Stale exec-UI translations: all 32 non-English locales carried the same
