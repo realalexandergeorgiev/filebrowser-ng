@@ -3,6 +3,10 @@ name: Continuous Integration
 # Fork CI: main is the default branch (local filebrowser-ng tracks
 # origin/main). govulncheck and the checksums job are required by TODO.md;
 # cache keys carry the module path on purpose (see TODO.md P4).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -99,19 +103,13 @@ jobs:
           pnpm test
           pnpm audit
 
-  checksums:
-    name: Release Checksums
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - working-directory: releases
-        run: sha256sum -c checksums.txt
-
   release-artifacts:
     name: Release Artifacts
-    needs: ["test-backend", "lint-backend", "govulncheck", "lint-frontend", "test-frontend", "checksums"]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [test-backend, lint-backend, govulncheck, lint-frontend, test-frontend]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
@@ -145,3 +143,17 @@ jobs:
           path: |
             dist/filebrowser-ng_*
             dist/checksums.txt
+
+  checksums:
+    name: Verify Release Checksums
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [release-artifacts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: filebrowser-ng-${{ github.ref_name }}
+          path: dist
+      - working-directory: dist
+        run: sha256sum -c checksums.txt
