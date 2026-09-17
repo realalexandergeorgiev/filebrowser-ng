@@ -155,6 +155,7 @@ func TestForgedSessionJTIRejected(t *testing.T) {
 	claims := &authToken{
 		User: userInfo{ID: 1, Username: "u"},
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    tokenIssuer,
 			ID:        "deadbeefdeadbeefdeadbeefdeadbeef",
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
@@ -169,6 +170,30 @@ func TestForgedSessionJTIRejected(t *testing.T) {
 	}
 }
 
+func TestTokenWithoutIssuerRejected(t *testing.T) {
+	st, key := sessionTestSetup(t)
+	sess, err := st.Sessions.Create(1, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Valid signature, live session, but no issuer: must not authenticate.
+	claims := &authToken{
+		User: userInfo{ID: 1, Username: "u"},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        sess.JTI,
+			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
+	}
+	issueless, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec := sessionGet(t, st, issueless); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("VULNERABLE: issuer-less token accepted = %d; want 401", rec.Code)
+	}
+}
+
 func TestDeletedUserTokenRejected(t *testing.T) {
 	st, key := sessionTestSetup(t)
 	// A live session for a user that does not exist: must be 401 (used to
@@ -180,6 +205,7 @@ func TestDeletedUserTokenRejected(t *testing.T) {
 	claims := &authToken{
 		User: userInfo{ID: 4242, Username: "ghost"},
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    tokenIssuer,
 			ID:        sess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),

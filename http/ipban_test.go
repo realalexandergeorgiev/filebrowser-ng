@@ -210,8 +210,9 @@ func TestForgedTokenCountsTowardsBan(t *testing.T) {
 
 	// JWT-shaped but signed with the wrong key: pure guessing.
 	forged, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &authToken{
-		User:             userInfo{ID: 1, Username: "u"},
-		RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))},
+		User: userInfo{ID: 1, Username: "u"},
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer: tokenIssuer, ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))},
 	}).SignedString([]byte("attacker-key"))
 	if err != nil {
 		t.Fatal(err)

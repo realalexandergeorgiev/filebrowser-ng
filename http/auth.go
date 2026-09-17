@@ -22,6 +22,11 @@ import (
 const (
 	DefaultTokenExpirationTime = time.Hour * 2
 
+	// tokenIssuer is minted into every token and verified on every request.
+	// There is no audience or key ID: this is a single-issuer system and
+	// the README must not claim otherwise.
+	tokenIssuer = "filebrowser-ng"
+
 	maxAuthBodySize = 1 << 20 // 1 MiB
 
 	// Unauthenticated password-spray budgets per TCP peer and minute.
@@ -144,7 +149,7 @@ func withUser(fn handleFunc) handleFunc {
 		}
 
 		var tk authToken
-		p := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
+		p := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired(), jwt.WithIssuer(tokenIssuer))
 		token, err := request.ParseFromRequest(r, &extractor{}, keyFunc, request.WithClaims(&tk), request.WithParser(p))
 		if (err != nil || !token.Valid) && !renewableErr(err, r, d, &tk) {
 			// Only forged tokens count towards a ban: missing, malformed or
@@ -410,7 +415,7 @@ func printToken(w http.ResponseWriter, r *http.Request, d *data, user *users.Use
 			ID:        jti,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpirationTime)),
-			Issuer:    "filebrowser-ng",
+			Issuer:    tokenIssuer,
 		},
 	}
 

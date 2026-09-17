@@ -100,6 +100,7 @@ func TestExpiredTokenNeedsProxyAssertion(t *testing.T) {
 	expired := &authToken{
 		User: userInfo{ID: 1, Username: "u", Perm: perm},
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    tokenIssuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
 		},
@@ -118,6 +119,7 @@ func TestExpiredTokenNeedsProxyAssertion(t *testing.T) {
 	proxyBacked := &authToken{
 		User: userInfo{ID: 1, Username: "u", Perm: perm},
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    tokenIssuer,
 			ID:        liveSess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),

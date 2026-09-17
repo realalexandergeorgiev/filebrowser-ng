@@ -15,7 +15,7 @@ Background: [Goodbye File Browser, for Real This Time](https://hacdias.com/2026/
 
 - **Full rewrite, full break:** no DB/config/API/CLI compatibility with v2. Fresh install; import tool for users/settings only (never imports `Settings.Key`).
 - **Command execution removed:** `runner/`, web shell (`GET /api/command`), hooks, `Shell`/`Commands` fields deleted. There is no `--disable-exec` anymore because there is nothing to enable.
-- **Server-side sessions:** short access JWT (5–15 min, `iss`/`aud`/`jti` verified, `kid` rotation) + opaque rotating refresh tokens (single-use, reuse-detection, max lifetime). Revocation on logout, password change, permission/scope change, admin revoke, user delete.
+- **Server-side sessions:** short access JWT (`alg` pinned to HS256, `exp` required, `iss` verified, `jti` checked against the server-side session store, sliding with a max lifetime). Revocation on logout, password change, permission/scope change, admin revoke, user delete.
 - **Single-binary selfhosted:** Bolt default, Redis optional for sessions/cache only. Non-root Docker, `0700` for DB/cache, no secrets in logs/exports.
 - See [`ARCHITEKTUR.md`](ARCHITEKTUR.md) (target design, audit findings with file refs) and [`CHANGELOG.md`](CHANGELOG.md) (per-fix entries). Upgrading from v2? Read [`MIGRATION.md`](MIGRATION.md) first.
 

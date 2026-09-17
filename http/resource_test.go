@@ -111,6 +111,7 @@ func signToken(t *testing.T, st *storage.Storage, perm users.Permissions, key []
 	claims := &authToken{
 		User: userInfo{ID: 1, Username: "u", Perm: perm},
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    tokenIssuer,
 			ID:        sess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
