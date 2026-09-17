@@ -106,6 +106,14 @@ FS/share/upload design:
 - `checkDescendants`-equivalent inside FS ops (not caller duty), atomic move, quota + count/size limits on archives/preview/search.
 - TUS: validate-before-truncate, server-enforced quota, offset without `O_APPEND`, scoped eviction on all backends.
 - Share: `Create` requires `Check`, rename/delete invalidate, constant-time compare, per-hash attempt bucket, expiry sweeper (no `append`-in-`range`).
+- Share `?token=` future (not implemented): the sliding URL token is a
+  secret-in-URL by design (history/logs exposure, bounded by 24 h age).
+  Options if this ever changes: (a) short single-use per-request tokens
+  minted from the share password, complicating every file fetch; (b) a
+  `HttpOnly` share cookie set after password entry, breaking plain-link
+  sharing. Both trade the leak for complexity or UX loss; current call is
+  to keep the URL token with a 24 h sliding age. If changed, update
+  `MIGRATION.md` (link format is user-visible).
 
 ## 5. Repo Layout (current → target)
 

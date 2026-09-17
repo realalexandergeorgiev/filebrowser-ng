@@ -121,21 +121,21 @@ guard sees swaps (no caching). Residual race documented in
   `script-src` free of `'unsafe-inline'` and any CDN.
 
 ### P3 — Share `?token=` ergonomics
-- `http/public.go` token survives 24h sliding (see `maxShareTokenAge`). Long-lived
-  secret-in-URL remains a leak vector (logs/history/Referer — Referer is mitigated via
-  `Referrer-Policy: no-referrer`). Consider issuing a short per-request signed token or
-  switching the share frontend to a cookie/header credential.
-- Acceptance: design note in `ARCHITEKTUR.md`; if changed, update `MIGRATION.md`.
+Done 2026-09-17 as a design decision (no code change): `ARCHITEKTUR.md`
+§4 records why the sliding URL token stays (per-request tokens or share
+cookies trade the leak for complexity/UX loss). Revisit only with a
+`MIGRATION.md` update, since link format is user-visible.
 
 ### P3 — Rebrand leftovers (consistency)
-- `cmd/root.go` default DB path is still `./filebrowser.db`; the container init scripts
-  in `docker/` and `docker/common/defaults/settings.json` still reference the old binary
-  name `filebrowser` and DB. Decide: rename to `filebrowser-ng.db` / `filebrowser-ng`
-  (full-break fork) or keep for compatibility, then make it consistent everywhere.
-- `docs/installation.md` still points at the upstream Docker Hub image
-  (`filebrowser/filebrowser`); update to this project's image/build instructions.
-- `rg -n 'filebrowser/filebrowser'` (excluding `CHANGELOG.md` and the two fork-attribution
-  lines in `README.md`/`ARCHITEKTUR.md`) should be empty after this.
+Done 2026-09-17 (full-break decision: rename): default DB is
+`./filebrowser-ng.db` (`cmd/root.go`, message in `cmd/utils.go`,
+`/database/filebrowser-ng.db` in `docker/common/defaults/settings.json`);
+`docs/installation.md` points at the fork releases page and locally built
+`filebrowser-ng[:s6]` images (no registry image published); upstream
+`brew`/`get.sh` blocks labeled as v2-only; code comment in
+`http/public.go` keeps the PR reference without the URL.
+- The upstream `org/repo` path appears nowhere anymore except `CHANGELOG.md`
+  history and the two fork-attribution lines in `README.md`/`ARCHITEKTUR.md`.
 
 ### P4 — CI
 - Add GitHub Actions: `go build/vet/test`, `govulncheck`, frontend

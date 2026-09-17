@@ -80,7 +80,7 @@ func init() {
 	// Flags available across the whole program
 	persistent := rootCmd.PersistentFlags()
 	persistent.StringP("config", "c", "", "config file path")
-	persistent.StringP("database", "d", "./filebrowser.db", "database path")
+	persistent.StringP("database", "d", "./filebrowser-ng.db", "database path")
 
 	// Runtime flags for the root command
 	flags := rootCmd.Flags()

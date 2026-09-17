@@ -4,7 +4,16 @@ filebrowser-ng is a single binary and can be used as standalone executable. Howe
 
 ## Binary
 
-The quickest and easiest way to install filebrowser-ng is to use a package manager, or our download script, which automatically fetches the latest version of filebrowser-ng for your platform. Alternatively, you can manually download the binary from the [releases page](https://github.com/realalexandergeorgiev/filebrowser-ng/releases).
+Download the binary for your platform from the [releases page](https://github.com/realalexandergeorgiev/filebrowser-ng/releases)
+(`filebrowser-ng_<os>_<arch>` plus `checksums.txt`; verify with
+`sha256sum -c checksums.txt`), then:
+
+```sh
+./filebrowser-ng -r /path/to/your/files
+```
+
+There is no package manager tap or install script for this fork (yet);
+the upstream ones below install upstream v2, not filebrowser-ng.
 
 ### Brew
 
@@ -32,7 +41,10 @@ filebrowser-ng is now up and running. Read the ["First Boot"](#first-boot) secti
 
 ## Docker
 
-filebrowser-ng is available as two different Docker images, which can be found on [Docker Hub](https://hub.docker.com/r/filebrowser/filebrowser): a [bare Alpine image](#bare-alpine-image) and an [S6 Overlay image](#s6-overlay-image).
+filebrowser-ng is available as two different Docker images, built locally
+from this repository (`Dockerfile` for a bare Alpine image and
+`Dockerfile.s6` for an S6 Overlay image — there is no published registry
+image for this fork yet): a [bare Alpine image](#bare-alpine-image) and an [S6 Overlay image](#s6-overlay-image).
 
 ### Bare Alpine Image
 
@@ -42,7 +54,7 @@ docker run \
     -v filebrowser_database:/database \
     -v filebrowser_config:/config \
     -p 8080:80 \
-    filebrowser/filebrowser
+    filebrowser-ng
 ```
 
 Where `filebrowser_data`, `filebrowser_database` and `filebrowser_config` are Docker [volumes](https://docs.docker.com/engine/storage/volumes/), where the data, database and configuration will be stored, respectively. The default configuration and database will be automatically initialized.
@@ -67,7 +79,7 @@ docker run \
     -e PUID=$(id -u) \
     -e PGID=$(id -g) \
     -p 8080:80 \
-    filebrowser/filebrowser:s6
+    filebrowser-ng:s6
 ```
 
 Where:

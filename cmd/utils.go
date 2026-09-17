@@ -165,9 +165,9 @@ func withViperAndStore(fn func(cmd *cobra.Command, args []string, v *viper.Viper
 		case exists && options.expectsNoDatabase:
 			log.Fatal(path + " already exists")
 		case !exists && !options.expectsNoDatabase && !options.allowsNoDatabase:
-			log.Fatal(path + " does not exist. Please run 'filebrowser config init' first.")
+			log.Fatal(path + " does not exist. Please run 'filebrowser-ng config init' first.")
 		case !exists && !options.expectsNoDatabase:
-			log.Println("WARNING: filebrowser.db can't be found. Initialing in " + strings.TrimSuffix(path, "filebrowser.db"))
+			log.Println("WARNING: filebrowser-ng.db can't be found. Initialing in " + strings.TrimSuffix(path, "filebrowser-ng.db"))
 		}
 
 		log.Println("Using database: " + path)

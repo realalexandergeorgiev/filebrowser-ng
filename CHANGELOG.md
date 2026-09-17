@@ -6,6 +6,17 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+### Changed
+
+* Rebrand consistency (full-break): default database is now
+  `./filebrowser-ng.db` (`/database/filebrowser-ng.db` in the container
+  defaults); `docs/installation.md` points at the fork releases page and
+  locally built images, upstream install blocks labeled v2-only. No
+  migration: point `-d` at the old file to keep using it.
+* Share `?token=` stays a URL token by design decision (see
+  `ARCHITEKTUR.md` §4): per-request tokens or share cookies would trade
+  the history/log leak for complexity or broken plain-link sharing.
+
 ### Fixed
 
 * Regex rules no longer panic on invalid patterns (`rules/`): `Regexp.Compile`
