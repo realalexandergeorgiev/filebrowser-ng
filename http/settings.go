@@ -45,6 +45,11 @@ var settingsPutHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
+	for i := range req.Rules {
+		if err := req.Rules[i].Validate(); err != nil {
+			return http.StatusBadRequest, err
+		}
+	}
 
 	d.settings.Signup = req.Signup
 	d.settings.CreateUserDir = req.CreateUserDir

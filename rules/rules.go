@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"errors"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -17,6 +18,18 @@ type Rule struct {
 	Allow  bool    `json:"allow"`
 	Path   string  `json:"path"`
 	Regexp *Regexp `json:"regexp"`
+}
+
+// Validate rejects rules that could never work, currently regex rules with
+// an uncompilable pattern (which would otherwise panic on first match).
+func (r *Rule) Validate() error {
+	if r.Regex {
+		if r.Regexp == nil {
+			return errors.New("regex rule without expression")
+		}
+		return r.Regexp.Compile()
+	}
+	return nil
 }
 
 // MatchHidden matches paths with a basename
@@ -62,10 +75,25 @@ type Regexp struct {
 	regexp *regexp.Regexp
 }
 
-// MatchString checks if a string matches the regexp.
+// Compile parses the raw expression now, so invalid patterns are rejected
+// at input (admin API, CLI, import) instead of panicking on first match.
+func (r *Regexp) Compile() error {
+	re, err := regexp.Compile(r.Raw)
+	if err != nil {
+		return err
+	}
+	r.regexp = re
+	return nil
+}
+
+// MatchString checks if a string matches the regexp. An uncompilable
+// pattern never matches instead of panicking: inputs are validated by
+// Compile, so this only guards rows written before validation existed.
 func (r *Regexp) MatchString(s string) bool {
 	if r.regexp == nil {
-		r.regexp = regexp.MustCompile(r.Raw)
+		if err := r.Compile(); err != nil {
+			return false
+		}
 	}
 
 	return r.regexp.MatchString(s)

@@ -70,6 +70,17 @@ func getUser(w http.ResponseWriter, r *http.Request) (*modifyUserRequest, error)
 		return nil, fberrors.ErrInvalidDataType
 	}
 
+	// A missing data object would nil-panic the callers below; a bad regex
+	// rule would panic on first match. Reject both with 400.
+	if req.Data == nil {
+		return nil, fberrors.ErrInvalidDataType
+	}
+	for i := range req.Data.Rules {
+		if err := req.Data.Rules[i].Validate(); err != nil {
+			return nil, err
+		}
+	}
+
 	return req, nil
 }
 

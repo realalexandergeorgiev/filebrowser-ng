@@ -6,6 +6,22 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+### Fixed
+
+* Regex rules no longer panic on invalid patterns (`rules/`): `Regexp.Compile`
+  validates at input and `MatchString` never matches instead of panicking;
+  `PUT /api/settings`, user create/update (`getUser`) and `rules add --regex`
+  reject bad patterns with 400/error. `getUser` also rejects a missing data
+  object instead of nil-panicking. Found while writing the fuzzers below.
+
+### Added
+
+* Go fuzz targets (`testing.F`, 30 s each, no failures): `FuzzSlashClean` and
+  `FuzzIfPathWithName` (`http/`), `FuzzRulePathMatches` and
+  `FuzzRegexpNoPanic` (`rules/`), `FuzzSessionExpired` and
+  `FuzzCreatePruneCap` (`sessions/`), pinning canonicalization, rule
+  boundaries, expiry math/monotonicity and session caps.
+
 ## [0.5.0-ng] - 2026-09-17
 
 ### Added

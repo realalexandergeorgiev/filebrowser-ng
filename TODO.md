@@ -68,15 +68,18 @@ Policy". This is how the nonce regression was found.
 ## 3. Open work items (priority order)
 
 ### P1 — Fuzzing / property tests (Go native `testing.F`)
-Goal: cover the security-critical parsers/paths against malformed input.
-- **Path canonicalization:** `http/utils.go` `slashClean`, `cleanSeparators`,
-  `canonicalizeRequestPath`. Property: output is always absolute, `/`-separated,
-  starts with `/`, and `Clean`-stable; `..` never survives as a traversal.
-- **Rules matching:** `rules/rules.go` `Matches` (incl. `CaseInsensitiveFs` folding,
-  `/`-boundary prefix). Property: a rule for `/a` never matches `/ab`; folding on
-  Windows-style input cannot widen a deny rule.
-- **Share hash/token parsing:** `http/public.go` `ifPathWithName`, token compare.
-- **Sessions:** `sessions/sessions.go` (JTI format, expiry math, prune caps).
+Done 2026-09-17 (6 targets, 30 s each, no crash/violation; keep running on
+touched parsers):
+- **Path canonicalization:** `http/fuzz_test.go` `FuzzSlashClean` (absolute,
+  Clean-stable, no trailing slash, no `..` segment) and `FuzzIfPathWithName`
+  (no panic, absolute file path).
+- **Rules matching:** `rules/fuzz_test.go` `FuzzRulePathMatches` (rule `/a`
+  covers exactly `/a` and `/a/...`, never `/ab`, both foldings) and
+  `FuzzRegexpNoPanic` (hostile patterns never panic; invalid ones never
+  match, `Validate` rejects them at input).
+- **Sessions:** `sessions/fuzz_test.go` `FuzzSessionExpired` (expiry math +
+  monotonicity) and `FuzzCreatePruneCap` (unique 32-hex JTIs, stored count
+  capped at `MaxSessionsPerUser`).
 - Acceptance: `go test -run=Fuzz -fuzz=Fuzz... -fuzztime=30s` finds no crash and no
   property violation on seeds + generated input. Add seed corpora from existing
   regression cases.

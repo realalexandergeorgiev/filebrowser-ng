@@ -37,7 +37,9 @@ var rulesAddCmd = &cobra.Command{
 		exp := args[0]
 
 		if regex {
-			regexp.MustCompile(exp)
+			if _, err := regexp.Compile(exp); err != nil {
+				return err
+			}
 		}
 
 		rule := rules.Rule{
