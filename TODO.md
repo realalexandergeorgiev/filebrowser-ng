@@ -169,9 +169,13 @@ module path. PR-title lint (`lint-pr.yaml`) kept as is.
   (`upload_cache_redis.go` shows the Redis client wiring).
 
 ### P5 — i18n nice-to-have
-- Other locale files under `frontend/src/i18n/*.json` may still contain dead keys for the
-  removed exec UI (Transifex integration stopped). `en.json` is already cleaned. Low risk;
-  only do this if churn is acceptable.
+Done 2026-09-17: every non-`en` locale carried the same 10 stale exec-UI
+keys (`buttons.shell`, `settings.allowCommands/commandRunner/
+commandRunnerHelp/commandsUpdated/executeOnShell/
+executeOnShellDescription/perm.execute/userCommands/userCommandsHelp`) —
+all unreferenced in `src/` (only dynamic `$t` is `search.<label>` with a
+closed label set, verified). Removed 320 keys across 32 locales, pure
+deletions; `en.json` untouched.
 
 ## 4. Completed (do not redo)
 

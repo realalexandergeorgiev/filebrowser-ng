@@ -6,6 +6,14 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+### Removed
+
+* Stale exec-UI translations: all 32 non-English locales carried the same
+  10 dead keys (`buttons.shell`, `settings.allowCommands/commandRunner/
+  .../perm.execute/userCommands...`); 320 lines removed, `en.json`
+  untouched. Verified unreferenced (only dynamic `$t` is `search.<label>`
+  with a closed label set).
+
 ### Changed
 
 * CI for the fork (`.github/workflows/ci.yaml`): triggers on `main` +
