@@ -21,13 +21,12 @@ Background: [Goodbye File Browser, for Real This Time](https://hacdias.com/2026/
 
 ## Security status
 
-Current branch: audit complete (`ARCHITEKTUR.md` §3), rewrite underway. Upstream P0 classes and their state here:
+Current branch: `filebrowser-ng` (rewrite landed; released as `v0.1.0-ng` → `v0.3.2-ng`). Upstream P0 classes and their state here:
 
 - ~~Command execution/runner/hooks (`#5199`)~~ — **removed** backend (no `runner/`, no web shell, no hooks, no `--disable-exec`) and frontend (no terminal, no runner settings, no per-user commands field).
-- ~~Hook authentication (`CVE-2026-54088`)~~ — **removed** (remaining: `json`, `proxy`, `noauth`).
+- ~~Hook authentication (`CVE-2026-54088`)~~ — **removed** (remaining: `json`, `proxy`, `noauth`); the hook-auth priv-esc / pre-auth RCE path is gone with it.
 - ~~Stateless JWT without revocation (`GO-2025-3812`/`CVE-2025-53826`/`#5216`)~~ — **done**: server-side sessions (`sessions/`, `DELETE /api/logout`, revocation on password/security change and delete).
-- Proxy header blind trust (`GO-2026-5966`) — **done**: header only honored from `TrustedProxies` (loopback-only by default).
-- Hook-auth priv-esc / pre-auth RCE (`CVE-2026-54088`) — scheduled (auth-hook removal).
+- ~~Proxy header blind trust (`GO-2026-5966`)~~ — **done**: header only honored from `TrustedProxies` (loopback-only by default).
 
 If you run anything pre-rewrite: do not expose directly, put behind a reverse proxy with TLS + own auth, keep exec disabled (default), run unprivileged in a container with only the served directory mounted.
 
@@ -36,7 +35,7 @@ Reporting: see [`SECURITY.md`](SECURITY.md).
 ## Quickstart (upstream baseline, will change)
 
 ```bash
-# backend (Go >= 1.25)
+# backend (Go >= 1.26)
 go build -trimpath -o filebrowser-ng .
 # frontend (Node >= 24, pnpm >= 10)
 cd frontend && pnpm install --frozen-lockfile && pnpm run build
@@ -53,12 +52,21 @@ Open work is tracked in [`TODO.md`](TODO.md) (AI-oriented backlog). Milestones s
 3. `v0.3.0-ng`: rebrand, module path rename (`github.com/realalexandergeorgiev/filebrowser-ng`), strict nonce-based CSP for the app shell, release binaries.
 4. `v0.3.1-ng`: ACE editor vendored (no CDN) and reCAPTCHA host allowed by CSP, so both work under the strict policy.
 5. `v0.3.2-ng`: markdown preview font size follows the editor font-size control.
+6. `v0.3.3-ng`: rejected-request log no longer prints `<nil>`; Go toolchain 1.26.8 (23 stdlib findings fixed), Go modules + npm dependencies updated, `govulncheck` and `pnpm audit` clean.
 
 Each fix = one commit (Conventional Commits), `CHANGELOG.md` updated per commit.
 
+## How this fork was built
+
+Everything in this repository — the security audit, the rewrite, every fix,
+the rebrand, the docs and the releases — was done in a **single session**
+with [OpenCode](https://opencode.ai), powered by **Muse Spark 1.3 (free
+tier)**: one fix per commit, each with a regression test and a `CHANGELOG.md`
+entry. The full history is the proof: `git log`.
+
 ## Contributing
 
-One logical fix per PR, with regression test + `CHANGELOG.md` entry + docs update if user-visible. English for all docs. Run `go test ./...`, `govulncheck ./...`, `pnpm --dir frontend test` + `typecheck` before pushing.
+One logical fix per PR, with regression test + `CHANGELOG.md` entry + docs update if user-visible. English for all docs. Run `go test ./...`, `govulncheck ./...`, `pnpm --dir frontend test` + `typecheck` + `audit` before pushing. Release builds require Go >= 1.26 (the `go.mod` toolchain).
 
 ## License
 

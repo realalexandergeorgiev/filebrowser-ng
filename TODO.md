@@ -8,9 +8,9 @@ AI-oriented backlog. Read this top-to-bottom in a fresh session before touching 
   `filebrowser/filebrowser`, last upstream `v2.63.23`).
 - **Go module path:** `github.com/realalexandergeorgiev/filebrowser-ng`.
   All imports use this path; there is **no** `.../v2` suffix anymore.
-- **Language/toolchain:** Go 1.26 (`go.mod`), Node >= 24 + pnpm 10 for `frontend/`.
-- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`, `v0.3.1-ng`, `v0.3.2-ng`.
-- **Version string:** `version/version.go` defaults to `0.3.2-ng`; release builds
+- **Language/toolchain:** Go 1.26.8 (`go.mod`), Node >= 24 + pnpm 10 for `frontend/`.
+- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`, `v0.3.1-ng`, `v0.3.2-ng`, `v0.3.3-ng`.
+- **Version string:** `version/version.go` defaults to `0.3.3-ng`; release builds
   inject `version.Version` / `version.CommitSHA` via `-ldflags`.
 - **Prebuilt binaries:** `releases/filebrowser-ng_<os>_<arch>[.exe]` + `releases/checksums.txt`.
   Rebuild with the script in §2, then refresh `checksums.txt`.
@@ -139,6 +139,11 @@ Goal: close the guard→op race for non-content operations too.
   workflow cache keys.
 
 ### P4 — Dependency hygiene
+- Audited 2026-09-17: Go toolchain 1.26.8, direct modules bumped (astisub,
+  go-redis, gopsutil, testify, x/net); `govulncheck` clean except uncalled
+  `GO-2026-5932` (`x/crypto`, no fix available). npm updated in-range plus
+  `pnpm.overrides` for `@xmldom/xmldom`/`rollup`/`esbuild`; `pnpm audit` is 0.
+  Intentionally held majors: `@vueuse` 15, `pinia` 4, `typescript` 7.
 - Re-evaluate `github.com/dsoprea/go-exif/v3` (EXIF metadata parsing) and any remaining
   EOL deps with `govulncheck -show verbose`. `gorilla/*`, `asdine/storm`,
   `mholt/archives`, `flynn/go-shlex`, `mitchellh/go-homedir` are already removed.
@@ -175,3 +180,9 @@ Goal: close the guard→op race for non-content operations too.
 - App shell fixed to run under a strict nonce-based CSP; ACE editor vendored under
   `/static/ace` (no CDN) and reCAPTCHA host allowed by CSP while enabled; sidebar
   credits link corrected.
+- Markdown preview font size follows the editor font-size control
+  (`--preview-font-size`).
+- Rejected-request log no longer prints `<nil>` for expected rejections
+  (`http/data.go` `formatRequestLog`, tested in `http/requestlog_test.go`).
+- Dependency audit 2026-09-17: Go 1.26.8, modules bumped, npm updated +
+  overrides, `govulncheck` and `pnpm audit` clean (see P4 hygiene note).

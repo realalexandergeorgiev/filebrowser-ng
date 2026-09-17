@@ -6,6 +6,19 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+## [0.3.3-ng] - 2026-09-17
+
+### Fixed
+
+* Rejected-request log (`http/data.go`): expected rejections (wrong credentials, missing token, …) carry no error object, but the log line printed it, producing confusing entries like `/api/login: 403 95.222.142.142 <nil>`. The line now omits the trailing field when there is no error.
+
+### Changed
+
+* Go toolchain 1.26.0 → 1.26.8 (`go.mod`): fixes 23 `govulncheck` stdlib findings (e.g. `crypto/x509`, `crypto/tls`, `net/http`); the scan is clean afterwards except one uncalled `x/crypto` item with no fix available (`GO-2026-5932`).
+* Go modules updated: `go-astisub` v0.42.0→v0.44.0, `go-redis` v9.21.0→v9.22.0, `gopsutil` v4.26.6→v4.26.8, `testify` v1.11.1→v1.12.1, `x/net` v0.58.0→v0.59.0.
+* npm dependencies updated within semver (`pnpm update`): vue 3.5.42, dompurify 3.4.15, marked 18.0.13, vite 8.3.0, eslint 10.10.0, …; `csv-parse` 6→7 (callback API unchanged, `browser/esm` import still valid).
+* `pnpm` overrides (`frontend/package.json`) pin patched transitives: `@xmldom/xmldom` ^0.8.15 (ships in the EPUB preview chunk via `epubjs`), `rollup` ^4.59.0, `esbuild` ^0.28.1. `pnpm audit`: 52 → 0 findings.
+
 ## [0.3.2-ng] - 2026-09-16
 
 ### Fixed

@@ -86,6 +86,16 @@ func (d *data) rulePath(path string) string {
 	return path
 }
 
+// formatRequestLog renders one rejected-request log line. Expected rejections
+// (wrong credentials, missing token, ...) carry no error, so the line omits
+// the trailing field instead of printing a confusing "<nil>".
+func formatRequestLog(path string, status int, clientIP string, err error) string {
+	if err != nil {
+		return path + ": " + strconv.Itoa(status) + " " + clientIP + " " + err.Error()
+	}
+	return path + ": " + strconv.Itoa(status) + " " + clientIP
+}
+
 func handle(fn handleFunc, prefix string, store *storage.Storage, server *settings.Server) http.Handler {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range globalHeaders {
@@ -106,7 +116,7 @@ func handle(fn handleFunc, prefix string, store *storage.Storage, server *settin
 
 		if status >= 400 || err != nil {
 			clientIP := realip.FromRequest(r)
-			log.Printf("%s: %v %s %v", r.URL.Path, status, clientIP, err)
+			log.Print(formatRequestLog(r.URL.Path, status, clientIP, err))
 		}
 
 		if status != 0 {
