@@ -207,6 +207,11 @@ func (s *ScopedFs) Create(name string) (afero.File, error) {
 }
 
 func (s *ScopedFs) Mkdir(name string, perm os.FileMode) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(name); err != nil {
 		return err
 	}
@@ -214,6 +219,11 @@ func (s *ScopedFs) Mkdir(name string, perm os.FileMode) error {
 }
 
 func (s *ScopedFs) MkdirAll(path string, perm os.FileMode) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(path); err != nil {
 		return err
 	}
@@ -251,6 +261,11 @@ func (s *ScopedFs) OpenFile(name string, flag int, perm os.FileMode) (afero.File
 }
 
 func (s *ScopedFs) Remove(name string) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(name); err != nil {
 		return err
 	}
@@ -258,6 +273,11 @@ func (s *ScopedFs) Remove(name string) error {
 }
 
 func (s *ScopedFs) RemoveAll(path string) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(path); err != nil {
 		return err
 	}
@@ -265,6 +285,11 @@ func (s *ScopedFs) RemoveAll(path string) error {
 }
 
 func (s *ScopedFs) Rename(oldname, newname string) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(oldname); err != nil {
 		return err
 	}
@@ -275,6 +300,11 @@ func (s *ScopedFs) Rename(oldname, newname string) error {
 }
 
 func (s *ScopedFs) Stat(name string) (os.FileInfo, error) {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(name); err != nil {
 		return nil, err
 	}
@@ -284,6 +314,11 @@ func (s *ScopedFs) Stat(name string) (os.FileInfo, error) {
 func (s *ScopedFs) Name() string { return "ScopedFs" }
 
 func (s *ScopedFs) Chmod(name string, mode os.FileMode) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(name); err != nil {
 		return err
 	}
@@ -291,6 +326,11 @@ func (s *ScopedFs) Chmod(name string, mode os.FileMode) error {
 }
 
 func (s *ScopedFs) Chown(name string, uid, gid int) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(name); err != nil {
 		return err
 	}
@@ -298,6 +338,11 @@ func (s *ScopedFs) Chown(name string, uid, gid int) error {
 }
 
 func (s *ScopedFs) Chtimes(name string, atime, mtime time.Time) error {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(name); err != nil {
 		return err
 	}
@@ -305,6 +350,11 @@ func (s *ScopedFs) Chtimes(name string, atime, mtime time.Time) error {
 }
 
 func (s *ScopedFs) LstatIfPossible(name string) (os.FileInfo, bool, error) {
+	// The guard sits directly above the syscall on purpose: guard() then
+	// op() is inherently racy against a concurrently swapped symlink, so
+	// the check closest to the call is the one that counts. This narrows
+	// the window to nanoseconds but cannot close it for metadata ops (no
+	// descriptor to verify, unlike content opens); see ARCHITEKTUR.md §7.
 	if err := s.guard(name); err != nil {
 		return nil, false, err
 	}

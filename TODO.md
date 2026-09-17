@@ -98,15 +98,14 @@ tokens are rejected, logging everyone out once.
   A `jti` already exists (= session id, enforced by `withUser`).
 
 ### P2 — TOCTOU for metadata ops (`files/scoped.go`)
-Goal: close the guard→op race for non-content operations too.
-- `Rename`, `Remove`, `RemoveAll`, `Stat`, `Chmod`, `Chown`, `Chtimes`, `Mkdir(All)`
-  currently do `guard(name)` then `base.<op>(name)`. Content opens are already hardened
-  via `verify` (`files/verify_linux.go`, `/proc/self/fd`). Metadata ops have no
-  descriptor to verify; best portable mitigation is re-checking `within()` immediately
-  before the syscall and documenting the residual race.
-- Acceptance: document residual risk in code comment + `ARCHITEKTUR.md`; add tests that
-  a symlink swapped between guard and op cannot escape for the ops that can be made
-  atomic (`Rename` with both paths re-guarded, `RemoveAll`).
+Done 2026-09-17 (best portable mitigation + proof, race itself is
+unfixable without descriptors): every metadata op keeps its guard
+directly above the syscall with a comment pinning that adjacency
+(`files/scoped.go`); `files/scoped_guard_test.go` asserts planted-escape
+refusal per op (`Rename` both paths, `Remove(All)`, `Mkdir(All)`, `Stat`,
+`Chmod`, `Chtimes`, `LstatIfPossible`), in-scope controls, and that the
+guard sees swaps (no caching). Residual race documented in
+`ARCHITEKTUR.md` §7. Content opens stay descriptor-verified on Linux.
 - Note: `openat2`/`RESOLVE_BENEATH` was evaluated and rejected (it rejects legitimate
   absolute in-scope symlinks); see `files/scoped.go` history. Do not reintroduce blindly.
 

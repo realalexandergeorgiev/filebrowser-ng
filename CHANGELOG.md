@@ -26,6 +26,12 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Added
 
+* Metadata-op guard adjacency (`files/scoped.go`): every guard now sits
+  directly above its syscall with a comment pinning that placement, so the
+  check closest to the call is the one that counts; per-op planted-escape
+  refusal, in-scope controls and guard-freshness-on-swap are tested
+  (`files/scoped_guard_test.go`). The residual race is documented, not
+  fixed — metadata ops have no descriptor to verify.
 * JWT `sub`/`nbf` (`http/auth.go`): minting always sets `Subject` (= user id)
   and `NotBefore`; `withUser` rejects absent/mismatched `sub` and absent or
   future `nbf` (tested). Pre-claim tokens are rejected, logging everyone out
