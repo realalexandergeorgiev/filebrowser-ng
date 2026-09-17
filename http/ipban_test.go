@@ -212,7 +212,7 @@ func TestForgedTokenCountsTowardsBan(t *testing.T) {
 	forged, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &authToken{
 		User: userInfo{ID: 1, Username: "u"},
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer: tokenIssuer, ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))},
+			Issuer: tokenIssuer, Subject: "1", NotBefore: jwt.NewNumericDate(time.Now().Add(-time.Minute)), ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))},
 	}).SignedString([]byte("attacker-key"))
 	if err != nil {
 		t.Fatal(err)

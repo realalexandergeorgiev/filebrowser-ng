@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -160,6 +161,17 @@ func withUser(fn handleFunc) handleFunc {
 			if presentedToken(r) && errors.Is(err, jwt.ErrTokenSignatureInvalid) {
 				ipBans.fail(banKey(r, d.server.TrustedProxies))
 			}
+			return http.StatusUnauthorized, nil
+		}
+
+		// The subject must name the same user the claims describe, and a
+		// not-before must be present (its value is enforced by the parser):
+		// tokens minted before sub/nbf existed — or hand-assembled ones —
+		// are rejected, logging everyone out once.
+		if tk.Subject == "" || tk.Subject != strconv.FormatUint(uint64(tk.User.ID), 10) {
+			return http.StatusUnauthorized, nil
+		}
+		if tk.NotBefore == nil {
 			return http.StatusUnauthorized, nil
 		}
 
@@ -398,6 +410,7 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 }
 
 func printToken(w http.ResponseWriter, r *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration, jti string) (int, error) {
+	now := time.Now()
 	claims := &authToken{
 		User: userInfo{
 			ID:                    user.ID,
@@ -415,8 +428,10 @@ func printToken(w http.ResponseWriter, r *http.Request, d *data, user *users.Use
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpirationTime)),
+			Subject:   strconv.FormatUint(uint64(user.ID), 10),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(tokenExpirationTime)),
 			Issuer:    tokenIssuer,
 		},
 	}

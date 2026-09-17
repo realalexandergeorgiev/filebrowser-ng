@@ -26,6 +26,11 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Added
 
+* JWT `sub`/`nbf` (`http/auth.go`): minting always sets `Subject` (= user id)
+  and `NotBefore`; `withUser` rejects absent/mismatched `sub` and absent or
+  future `nbf` (tested). Pre-claim tokens are rejected, logging everyone out
+  once. `aud` deliberately skipped: single-issuer HS256 with per-instance
+  keys leaves it nothing to bind.
 * Per-file upload cap (`settings.Server.MaxUploadSize`, `--maxUploadSize`,
   bytes, 0 = unlimited): plain POST, PUT replace and TUS creation reject
   oversized uploads with 413 — upfront when the size is declared, mid-stream

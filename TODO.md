@@ -85,15 +85,17 @@ touched parsers):
   regression cases.
 
 ### P2 — JWT claims hardening (`http/auth.go`)
-Goal: tokens are bound to this deployment and not replayable across instances.
-- Done: parser enforces `WithValidMethods([HS256]) + WithExpirationRequired
-  + WithIssuer("filebrowser-ng")` (`tokenIssuer`, tested in
-  `http/sessions_test.go`). A `jti` already exists (= session id, enforced
-  by `withUser`).
-- Open: `Subject` (user id), `NotBefore` always present. Consider `Audience`
-  = realm/baseURL.
-- Acceptance: a token with a wrong/absent issuer or a future `nbf` is rejected (401);
-  regression test in `http/sessions_test.go`.
+Done 2026-09-17: parser enforces `WithValidMethods([HS256]) +
+WithExpirationRequired + WithIssuer("filebrowser-ng")` (`tokenIssuer`);
+minting always sets `Subject` (= user id) and `NotBefore` (= issued-at),
+and `withUser` rejects absent/mismatched `sub` and absent `nbf` (future
+`nbf` fails in the parser). Tested in `http/sessions_test.go`
+(`TestTokenClaimsEnforced`, `TestTokenWithoutIssuerRejected`); pre-claim
+tokens are rejected, logging everyone out once.
+- Open: `Audience`. Skipped deliberately: single-issuer HS256 with per-
+  instance keys gives `aud` nothing to bind — a foreign instance's token
+  never verifies here. Revisit only if key sharing across realms appears.
+  A `jti` already exists (= session id, enforced by `withUser`).
 
 ### P2 — TOCTOU for metadata ops (`files/scoped.go`)
 Goal: close the guard→op race for non-content operations too.

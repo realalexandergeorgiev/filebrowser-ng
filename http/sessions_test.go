@@ -156,6 +156,8 @@ func TestForgedSessionJTIRejected(t *testing.T) {
 		User: userInfo{ID: 1, Username: "u"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    tokenIssuer,
+			Subject:   "1",
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ID:        "deadbeefdeadbeefdeadbeefdeadbeef",
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
@@ -206,6 +208,8 @@ func TestDeletedUserTokenRejected(t *testing.T) {
 		User: userInfo{ID: 4242, Username: "ghost"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    tokenIssuer,
+			Subject:   "4242",
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ID:        sess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
@@ -435,5 +439,48 @@ func TestMeEndpoint(t *testing.T) {
 	handle(meHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("anonymous me = %d, want 401", rec.Code)
+	}
+}
+
+func TestTokenClaimsEnforced(t *testing.T) {
+	st, key := sessionTestSetup(t)
+	sess, err := st.Sessions.Create(1, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mint := func(mut func(*authToken)) string {
+		claims := &authToken{
+			User: userInfo{ID: 1, Username: "u"},
+			RegisteredClaims: jwt.RegisteredClaims{
+				ID:        sess.JTI,
+				Subject:   "1",
+				IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
+				NotBefore: jwt.NewNumericDate(time.Now().Add(-time.Minute)),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+				Issuer:    tokenIssuer,
+			},
+		}
+		mut(claims)
+		signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return signed
+	}
+
+	valid := mint(func(*authToken) {})
+	if rec := sessionGet(t, st, valid); rec.Code != http.StatusOK {
+		t.Fatalf("complete claims = %d, want 200", rec.Code)
+	}
+
+	for name, tok := range map[string]string{
+		"future nbf":     mint(func(c *authToken) { c.NotBefore = jwt.NewNumericDate(time.Now().Add(time.Hour)) }),
+		"missing nbf":    mint(func(c *authToken) { c.NotBefore = nil }),
+		"missing sub":    mint(func(c *authToken) { c.Subject = "" }),
+		"mismatched sub": mint(func(c *authToken) { c.Subject = "2" }),
+	} {
+		if rec := sessionGet(t, st, tok); rec.Code != http.StatusUnauthorized {
+			t.Errorf("VULNERABLE: %s accepted = %d; want 401", name, rec.Code)
+		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -160,6 +161,8 @@ func signShareTestToken(t *testing.T, st *storage.Storage, id uint, username str
 		User: userInfo{ID: id, Username: username, Perm: perm},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    tokenIssuer,
+			Subject:   strconv.FormatUint(uint64(id), 10),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ID:        sess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),

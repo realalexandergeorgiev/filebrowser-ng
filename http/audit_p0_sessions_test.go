@@ -33,6 +33,8 @@ func TestRevokedSessionTokenRejected(t *testing.T) {
 		User: userInfo{ID: 1, Username: "u", Perm: perm},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    tokenIssuer,
+			Subject:   "1",
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ID:        sess.JTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
