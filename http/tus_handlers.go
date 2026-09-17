@@ -110,6 +110,9 @@ func tusPostHandler(cache UploadCache) handleFunc {
 		if err != nil || uploadLength < 0 {
 			return http.StatusBadRequest, fmt.Errorf("invalid upload length: %w", err)
 		}
+		if limit := uploadLimit(d); limit > 0 && uploadLength > limit {
+			return http.StatusRequestEntityTooLarge, fmt.Errorf("upload length %d exceeds the maximum of %d bytes", uploadLength, limit)
+		}
 
 		openFile, err := d.user.Fs.OpenFile(r.URL.Path, fileFlags, d.settings.FileMode)
 		if err != nil {

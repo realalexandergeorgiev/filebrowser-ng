@@ -66,6 +66,11 @@ type Server struct {
 	// so a bypassed or missing proxy no longer means admin access.
 	TrustedProxies []string `json:"trustedProxies"`
 
+	// MaxUploadSize caps a single uploaded file in bytes (plain POST, PUT
+	// replace and TUS creation). Zero means unlimited. It bounds
+	// authenticated disk-fill, not a substitute for filesystem quotas.
+	MaxUploadSize uint64 `json:"maxUploadSize"`
+
 	// CaseInsensitiveFs is detected from Root at startup rather than
 	// configured, and tells the rule checker to match paths case-insensitively.
 	// It is never persisted.

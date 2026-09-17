@@ -8,6 +8,11 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Fixed (audit)
 
+* Per-file upload cap (`settings.Server.MaxUploadSize`, `--maxUploadSize`,
+  bytes, 0 = unlimited): plain POST, PUT replace and TUS creation reject
+  oversized uploads with 413 — upfront when the size is declared, mid-stream
+  otherwise, with partial files removed. Bounds authenticated disk-fill;
+  not a substitute for filesystem quotas.
 * EPUB preview sandbox (`frontend/src/views/files/Preview.vue`): dropped the
   `allowPopups: true` override, so book content renders in an iframe
   sandboxed to `allow-same-origin` only — book scripts cannot run and book

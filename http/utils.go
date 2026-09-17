@@ -98,6 +98,8 @@ func errToStatus(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, libErrors.ErrRootUserDeletion):
 		return http.StatusForbidden
+	case errors.Is(err, errUploadTooLarge):
+		return http.StatusRequestEntityTooLarge
 	case errors.Is(err, imgErrors.ErrImageTooLarge):
 		return http.StatusRequestEntityTooLarge
 	default:

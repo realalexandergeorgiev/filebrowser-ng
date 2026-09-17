@@ -209,6 +209,7 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\tType Detection by Header:\t%t\n", ser.TypeDetectionByHeader)
 	fmt.Fprintf(w, "\tFollow External Symlinks:\t%t\n", ser.FollowExternalSymlinks)
 	fmt.Fprintf(w, "\tTrusted Proxies:\t%s\n", strings.Join(ser.TrustedProxies, ", "))
+	fmt.Fprintf(w, "\tMax Upload Size:\t%d\n", ser.MaxUploadSize)
 
 	fmt.Fprintln(w, "\nTUS:")
 	fmt.Fprintf(w, "\tChunk size:\t%d\n", set.Tus.ChunkSize)
@@ -294,6 +295,8 @@ func getSettings(flags *pflag.FlagSet, set *settings.Settings, ser *settings.Ser
 			ser.FollowExternalSymlinks, err = flags.GetBool(flag.Name)
 		case "trustedProxies":
 			ser.TrustedProxies, err = flags.GetStringSlice(flag.Name)
+		case "maxUploadSize":
+			ser.MaxUploadSize, err = flags.GetUint64(flag.Name)
 
 		// Settings flags from [addConfigFlags]
 		case "signup":

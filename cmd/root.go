@@ -112,6 +112,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.Bool("disableImageResolutionCalc", false, "disables image resolution calculation by reading image files")
 	flags.Bool("followExternalSymlinks", false, "follow symlinks whose target is outside the user scope (unsafe)")
 	flags.StringSlice("trustedProxies", nil, "IPs/CIDRs proxy auth accepts logins from (matched against the direct peer; default loopback only)")
+	flags.Uint64("maxUploadSize", 0, "maximum bytes per uploaded file, 0 means unlimited")
 }
 
 var rootCmd = &cobra.Command{

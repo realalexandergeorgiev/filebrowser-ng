@@ -164,7 +164,11 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 			}
 		}
 
-		info, writeErr := writeFile(d.user.Fs, r.URL.Path, r.Body, d.settings.FileMode, d.settings.DirMode)
+		limit := uploadLimit(d)
+		if limit > 0 && r.ContentLength > limit {
+			return http.StatusRequestEntityTooLarge, errUploadTooLarge
+		}
+		info, writeErr := writeFile(d.user.Fs, r.URL.Path, r.Body, d.settings.FileMode, d.settings.DirMode, limit)
 		if writeErr != nil {
 			err = writeErr
 		} else {
@@ -199,13 +203,23 @@ var resourcePutHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		return http.StatusNotFound, nil
 	}
 
-	info, writeErr := writeFile(d.user.Fs, r.URL.Path, r.Body, d.settings.FileMode, d.settings.DirMode)
+	limit := uploadLimit(d)
+	if limit > 0 && r.ContentLength > limit {
+		return http.StatusRequestEntityTooLarge, errUploadTooLarge
+	}
+	info, writeErr := writeFile(d.user.Fs, r.URL.Path, r.Body, d.settings.FileMode, d.settings.DirMode, limit)
 	if writeErr != nil {
 		err = writeErr
 	} else {
 		etag := fmt.Sprintf(`"%x%x"`, info.ModTime().UnixNano(), info.Size())
 		w.Header().Set("ETag", etag)
 		err = nil
+	}
+
+	if errors.Is(err, errUploadTooLarge) {
+		// No corrupt remnant: the replace did not fit, so drop the partial
+		// file instead of leaving a truncated one behind.
+		_ = d.user.Fs.RemoveAll(r.URL.Path)
 	}
 
 	return errToStatus(err), err
@@ -349,7 +363,21 @@ func addVersionSuffix(source string, afs afero.Fs) string {
 	return source
 }
 
-func writeFile(afs afero.Fs, dst string, in io.Reader, fileMode, dirMode fs.FileMode) (os.FileInfo, error) {
+// errUploadTooLarge aborts writes that exceed the configured per-file cap.
+// errToStatus maps it to 413.
+var errUploadTooLarge = errors.New("upload exceeds the configured maximum size")
+
+// uploadLimit returns the configured per-file upload cap in bytes, or 0 for
+// unlimited.
+func uploadLimit(d *data) int64 {
+	max := d.server.MaxUploadSize
+	if max == 0 {
+		return 0
+	}
+	return int64(min(max, 1<<62))
+}
+
+func writeFile(afs afero.Fs, dst string, in io.Reader, fileMode, dirMode fs.FileMode, maxBytes int64) (os.FileInfo, error) {
 	dir, _ := path.Split(dst)
 	err := afs.MkdirAll(dir, dirMode)
 	if err != nil {
@@ -362,9 +390,18 @@ func writeFile(afs afero.Fs, dst string, in io.Reader, fileMode, dirMode fs.File
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, in)
+	// Bound the copy one byte past the cap so an over-long body is
+	// detected even when the client did not declare its size upfront.
+	src := in
+	if maxBytes > 0 {
+		src = io.LimitReader(in, maxBytes+1)
+	}
+	n, err := io.Copy(file, src)
 	if err != nil {
 		return nil, err
+	}
+	if maxBytes > 0 && n > maxBytes {
+		return nil, errUploadTooLarge
 	}
 
 	// Sync the file to ensure all data is written to storage.
