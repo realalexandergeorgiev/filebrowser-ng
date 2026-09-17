@@ -274,3 +274,56 @@ func TestRawArchiveRemovedFormatsRejected(t *testing.T) {
 		}
 	}
 }
+
+// Regression for an archive-packing infinite loop (audit L9): an in-scope
+// symlink pointing at an ancestor directory (a/loop -> a) made getFiles
+// recurse forever, burning CPU and memory until the server died. Directory
+// ancestry is now tracked by file identity, so the second visit stops.
+// afero.Walk-based endpoints (recursive listing, search) use lstat and never
+// descended into symlinked dirs in the first place.
+func TestRawArchiveStopsSymlinkCycle(t *testing.T) {
+	root := t.TempDir()
+	userScope := filepath.Join(root, "user")
+	dir := filepath.Join(userScope, "a")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "f.txt"), []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Absolute symlink so the test does not depend on the traversal order.
+	if err := os.Symlink(dir, filepath.Join(dir, "loop")); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+
+	key := []byte("test-signing-key")
+	perm := users.Permissions{Download: true}
+	st := scopedUserStorage(t, userScope, perm, key)
+	signed := signToken(t, st, perm, key)
+
+	req, _ := http.NewRequest(http.MethodGet, "/a?algo=zip", http.NoBody)
+	req.Header.Set("X-Auth", signed)
+	rec := httptest.NewRecorder()
+	handle(rawHandler, "", st, &settings.Server{}).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%q", rec.Code, rec.Body.String())
+	}
+	zr, err := zip.NewReader(bytes.NewReader(rec.Body.Bytes()), int64(rec.Body.Len()))
+	if err != nil {
+		t.Fatalf("failed to read zip: %v", err)
+	}
+	// The loop itself is archived once as an (empty) directory entry, but
+	// must not be descended into: exactly two entries, no runaway.
+	got := map[string]bool{}
+	for _, f := range zr.File {
+		got[f.Name] = true
+	}
+	if len(got) != 2 || !got["f.txt"] || !got["loop/"] {
+		names := make([]string, 0, len(zr.File))
+		for _, f := range zr.File {
+			names = append(names, f.Name)
+		}
+		t.Fatalf("archive entries = %q, want {f.txt, loop/}", names)
+	}
+}

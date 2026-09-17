@@ -8,6 +8,12 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Fixed (audit)
 
+* Archive symlink cycles (`http/raw.go`): an in-scope symlink to an ancestor
+  directory made the archive packer recurse forever (CPU/memory burn). The
+  recursion now tracks directory ancestry by file identity and stops at the
+  first repeat; the loop is still archived once as an empty dir entry
+  (tested). Recursive listing and search were already safe (lstat-based
+  walk, no descent into symlinked dirs).
 * Per-file upload cap (`settings.Server.MaxUploadSize`, `--maxUploadSize`,
   bytes, 0 = unlimited): plain POST, PUT replace and TUS creation reject
   oversized uploads with 413 — upfront when the size is declared, mid-stream

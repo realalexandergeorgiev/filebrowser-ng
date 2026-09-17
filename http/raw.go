@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	gopath "path"
 	"path/filepath"
 	"strings"
@@ -114,6 +115,10 @@ type archiveEntry struct {
 }
 
 func getFiles(d *data, path, commonPath string) ([]archiveEntry, error) {
+	return getFilesSeen(d, path, commonPath, nil)
+}
+
+func getFilesSeen(d *data, path, commonPath string, ancestors []os.FileInfo) ([]archiveEntry, error) {
 	if !d.Check(path) {
 		return nil, nil
 	}
@@ -153,6 +158,20 @@ func getFiles(d *data, path, commonPath string) ([]archiveEntry, error) {
 	}
 
 	if info.IsDir() {
+		// An in-scope symlink to an ancestor directory would recurse
+		// forever (a/loop -> a -> a/loop -> ...). The scoped filesystem
+		// allows in-scope links, so stop at the first repeated directory
+		// instead, identified by file identity rather than by name.
+		for _, ancestor := range ancestors {
+			if os.SameFile(ancestor, info) {
+				log.Printf("skipping symlink cycle at %s", path)
+				return archiveFiles, nil
+			}
+		}
+		// Full slice expression: each level gets its own backing array so
+		// sibling subtrees cannot overwrite each other's ancestry.
+		ancestors = append(ancestors[:len(ancestors):len(ancestors)], info)
+
 		f, err := d.user.Fs.Open(path)
 		if err != nil {
 			return nil, err
@@ -166,7 +185,7 @@ func getFiles(d *data, path, commonPath string) ([]archiveEntry, error) {
 
 		for _, name := range names {
 			fPath := filepath.Join(path, name)
-			subFiles, err := getFiles(d, fPath, commonPath)
+			subFiles, err := getFilesSeen(d, fPath, commonPath, ancestors)
 			if err != nil {
 				log.Printf("Failed to get files from %s: %v", fPath, err)
 				continue
