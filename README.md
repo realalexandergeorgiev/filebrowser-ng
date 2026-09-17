@@ -64,6 +64,7 @@ Open work is tracked in [`TODO.md`](TODO.md) (AI-oriented backlog). Milestones s
 5. `v0.3.2-ng`: markdown preview font size follows the editor font-size control.
 6. `v0.3.3-ng`: rejected-request log no longer prints `<nil>`; Go toolchain 1.26.8 (23 stdlib findings fixed), Go modules + npm dependencies updated, `govulncheck` and `pnpm audit` clean.
 7. `v0.4.0-ng`: brute-force IP bans — 10 failed logins/share-passwords/forged tokens in 10 min bans the peer from the whole API for 1 h (429 + `Retry-After`).
+8. `v0.5.0-ng`: follow-up audit batch — admin-bootstrap warning, JSON body caps, JWT issuer enforcement, auth logging, frontend hardening (DOMPurify denylist, redirect validation, noopener), branding symlink containment, EPUB sandbox, `--maxUploadSize`, archive cycle guard, residual-risk docs.
 
 Each fix = one commit (Conventional Commits), `CHANGELOG.md` updated per commit.
 

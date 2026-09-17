@@ -9,8 +9,8 @@ AI-oriented backlog. Read this top-to-bottom in a fresh session before touching 
 - **Go module path:** `github.com/realalexandergeorgiev/filebrowser-ng`.
   All imports use this path; there is **no** `.../v2` suffix anymore.
 - **Language/toolchain:** Go 1.26.8 (`go.mod`), Node >= 24 + pnpm 10 for `frontend/`.
-- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`, `v0.3.1-ng`, `v0.3.2-ng`, `v0.3.3-ng`, `v0.4.0-ng`.
-- **Version string:** `version/version.go` defaults to `0.4.0-ng`; release builds
+- **Branch:** `filebrowser-ng`. **Tags:** `v0.1.0-ng`, `v0.2.0-ng`, `v0.3.0-ng`, `v0.3.1-ng`, `v0.3.2-ng`, `v0.3.3-ng`, `v0.4.0-ng`, `v0.5.0-ng`.
+- **Version string:** `version/version.go` defaults to `0.5.0-ng`; release builds
   inject `version.Version` / `version.CommitSHA` via `-ldflags`.
 - **Prebuilt binaries:** `releases/filebrowser-ng_<os>_<arch>[.exe]` + `releases/checksums.txt`.
   Rebuild with the script in §2, then refresh `checksums.txt`.
@@ -191,3 +191,7 @@ Goal: close the guard→op race for non-content operations too.
 - Brute-force IP bans (`http/ipban.go`): 10 failed logins/share-passwords/
   forged tokens in 10 min bans the peer API-wide for 1 h; trusted-proxy-aware
   keying, capped/expiring, tested in `http/ipban_test.go`.
+- Audit batch v0.5.0-ng: admin-bootstrap warning, JSON body caps, JWT issuer
+  enforcement, auth logging, frontend hardening, branding symlink
+  containment, EPUB sandbox, `--maxUploadSize`, archive cycle guard,
+  residual-risk docs (`ARCHITEKTUR.md` §7).

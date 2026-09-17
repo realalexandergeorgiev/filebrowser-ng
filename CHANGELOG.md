@@ -6,6 +6,16 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+## [0.5.0-ng] - 2026-09-17
+
+### Added
+
+* Per-file upload cap (`settings.Server.MaxUploadSize`, `--maxUploadSize`,
+  bytes, 0 = unlimited): plain POST, PUT replace and TUS creation reject
+  oversized uploads with 413 — upfront when the size is declared, mid-stream
+  otherwise, with partial files removed. Bounds authenticated disk-fill;
+  not a substitute for filesystem quotas.
+
 ### Fixed (audit)
 
 * Audit residuals documented: `ARCHITEKTUR.md` §7 records the accepted
@@ -20,11 +30,6 @@ and `MIGRATION.md` for upgrading from v2.
   first repeat; the loop is still archived once as an empty dir entry
   (tested). Recursive listing and search were already safe (lstat-based
   walk, no descent into symlinked dirs).
-* Per-file upload cap (`settings.Server.MaxUploadSize`, `--maxUploadSize`,
-  bytes, 0 = unlimited): plain POST, PUT replace and TUS creation reject
-  oversized uploads with 413 — upfront when the size is declared, mid-stream
-  otherwise, with partial files removed. Bounds authenticated disk-fill;
-  not a substitute for filesystem quotas.
 * EPUB preview sandbox (`frontend/src/views/files/Preview.vue`): dropped the
   `allowPopups: true` override, so book content renders in an iframe
   sandboxed to `allow-same-origin` only — book scripts cannot run and book
