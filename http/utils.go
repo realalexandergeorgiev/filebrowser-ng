@@ -74,6 +74,14 @@ func renderJSON(w http.ResponseWriter, _ *http.Request, data interface{}) (int, 
 	return 0, nil
 }
 
+// capJSONBody bounds JSON request bodies, like login/signup already do: an
+// unbounded decode buffers attacker-controlled input in memory.
+func capJSONBody(w http.ResponseWriter, r *http.Request) {
+	if r.Body != nil {
+		r.Body = http.MaxBytesReader(w, r.Body, maxAuthBodySize)
+	}
+}
+
 func errToStatus(err error) int {
 	switch {
 	case err == nil:

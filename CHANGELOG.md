@@ -6,6 +6,16 @@ and `MIGRATION.md` for upgrading from v2.
 
 ## [Unreleased]
 
+### Fixed (audit)
+
+* JSON body caps (`http/utils.go`): settings/users/share endpoints now bound
+  request bodies like login/signup already do (`capJSONBody`, 1 MiB), so an
+  unbounded decode can no longer buffer attacker-controlled input in memory.
+* Admin bootstrap (`cmd/users_add.go`): `users add` now warns when the
+  instance is left without any administrator (fresh installs default to
+  non-admin); README quickstart documents creating the first user with
+  `--perm.admin=true`.
+
 ## [0.4.0-ng] - 2026-09-17
 
 ### Added

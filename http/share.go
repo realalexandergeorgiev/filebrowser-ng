@@ -177,6 +177,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	var s *share.Link
 	var body share.CreateBody
 	if r.Body != nil {
+		capJSONBody(w, r)
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			return http.StatusBadRequest, fmt.Errorf("failed to decode body: %w", err)
 		}
