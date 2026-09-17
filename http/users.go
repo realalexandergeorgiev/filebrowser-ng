@@ -191,7 +191,7 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 		return http.StatusInternalServerError, err
 	}
 	req.Data.Scope = userHome
-	log.Printf("user: %s, home dir: [%s].", req.Data.Username, userHome)
+	log.Printf("user: %q, home dir: [%q].", req.Data.Username, userHome)
 
 	err = d.store.Users.Save(req.Data)
 	if err != nil {

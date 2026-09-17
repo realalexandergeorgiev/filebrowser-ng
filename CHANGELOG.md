@@ -8,6 +8,13 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Fixed (audit)
 
+* Auth logging (`http/auth.go`, `http/users.go`): successful logins are now
+  logged (`login: user %q from <ip>`), and usernames/home dirs in logs use
+  `%q`, so a newline username can no longer forge log lines (tested).
+* JWT issuer (`http/auth.go`): the parser now verifies `iss=filebrowser-ng`
+  (`tokenIssuer`, shared with minting); issuer-less tokens are rejected
+  (tested). README corrected: there never was `aud`/`kid` — verified claims
+  are `alg`/`exp`/`iss`/`jti`.
 * JSON body caps (`http/utils.go`): settings/users/share endpoints now bound
   request bodies like login/signup already do (`capJSONBody`, 1 MiB), so an
   unbounded decode can no longer buffer attacker-controlled input in memory.

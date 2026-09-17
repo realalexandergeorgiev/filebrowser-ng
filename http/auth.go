@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang-jwt/jwt/v5/request"
+	"github.com/tomasen/realip"
 
 	fbAuth "github.com/realalexandergeorgiev/filebrowser-ng/auth"
 	fberrors "github.com/realalexandergeorgiev/filebrowser-ng/errors"
@@ -266,6 +267,7 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 
 		// A successful login proves legitimacy and clears the peer's record.
 		ipBans.reset(banKey(r, d.server.TrustedProxies))
+		log.Printf("login: user %q from %s", user.Username, realip.FromRequest(r))
 
 		sess, err := d.store.Sessions.Create(user.ID, tokenExpireTime)
 		if err != nil {
@@ -368,7 +370,7 @@ var signup = func(w http.ResponseWriter, r *http.Request, d *data) (int, error) 
 		return http.StatusInternalServerError, err
 	}
 
-	log.Printf("new user: %s, home dir: [%s].", user.Username, user.Scope)
+	log.Printf("new user: %q, home dir: [%q].", user.Username, user.Scope)
 
 	err = d.store.Users.SaveProvisioned(user, derivedScope)
 	if errors.Is(err, fberrors.ErrExist) {
