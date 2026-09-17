@@ -8,6 +8,11 @@ and `MIGRATION.md` for upgrading from v2.
 
 ### Fixed (audit)
 
+* EPUB preview sandbox (`frontend/src/views/files/Preview.vue`): dropped the
+  `allowPopups: true` override, so book content renders in an iframe
+  sandboxed to `allow-same-origin` only — book scripts cannot run and book
+  links cannot open popups (browser-verified: renders fine, embedded script
+  inert). External book links no longer open.
 * Branding override symlink (`http/static.go`): `brandingFile` now resolves
   symlinks and rejects ones escaping the branding directory (served
   unauthenticated); in-directory symlinks and the fall-through to embedded

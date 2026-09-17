@@ -83,7 +83,10 @@
               requestCredentials: true,
             }"
             :epubOptions="{
-              allowPopups: true,
+              // Keep epub.js defaults (allowScriptedContent: false,
+              // allowPopups: false): book content renders in an iframe
+              // sandboxed to allow-same-origin only, so book scripts
+              // cannot run and book links cannot open popups.
             }"
             @update:location="locationChange"
           />
